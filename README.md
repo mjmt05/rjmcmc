@@ -23,7 +23,7 @@ The data file should contain space delimited values, refer to the two example da
 
 DOCUMENTATION
 _____________
-Some detailed instructions available in documentation.pdf but mostly still under development, contact authors with any inquiries. 
+Some brief description of the algorithm and the model provided in the Documentation subfolder but mostly still under development, contact authors with any inquiries. 
 
 REFERENCE
 _________
