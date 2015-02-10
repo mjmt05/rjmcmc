@@ -1,0 +1,77 @@
+\documentclass{article}
+\usepackage[authoryear, round]{natbib}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\mathtoolsset{showonlyrefs}
+
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\diff}{\mathrm{d}}
+
+\begin{document}
+
+\section{General comments} 
+Throughout the code for both RJMCMC and SMC the prior parameter asssumed for the number and location of the changepoints is a Poisson process, so that if $k$ is the number of changepoints over $[0,T]$ and $\tau_{1:k}=(\tau_{1},\ldots,\tau_{k})$ then 
+\begin{equation}
+p(\tau_{1:k},k)=\nu^{k}\mbox{e}^{-\nu T}\mathbb{I}_{\mathbb{T}_{k}}(\tau_{1},\ldots,\tau_{k}).
+\label{eq:priorchangepoints}
+\end{equation}
+where $\mathbb{T}_{k}=\{\tau_{ 1:k}:0<\tau_{1}<\ldots<\tau_{k}<T\}$.
+
+\section{Input options}
+\begin{itemize}
+\item For a Poisson process modelprior1$=\alpha$ and modelprior2$=\beta$, see Section \ref{sec:pp}. 
+
+\item For SNCP modelprior1$=\alpha$ and modelprior2$=\kappa$, see Section \ref{sec:sncp}.
+\item To get results from \cite{turcotte15}, use the settings specified in the examples when using the -h option with the compiled code. 
+\end{itemize}
+\section{Poisson process}\label{sec:pp}
+The data generating process $y(t)$ is assumed to be the increments of an inhomogeneous Poisson process with piecewise constant intensity $\lambda(t)$. So the stochastic process $y(t)=0$ almost everywhere, otherwise $y(t)=1$ at finitely many $t$, which will be referred to as the event times of the process.
+
+For a data process observed over the interval $[0,T]$ the jumps in the intensity will correspond to the vector of changepoints $\tau_{1:k}$. Define the parameter vector $\lambda_{0:k}=(\lambda_{0},\ldots,\lambda_{k})$, such that $\lambda(t)=\sum_{i=0}^{k}\lambda_i\I_{(\tau_i,\tau_{i+1}]}(t)$, where $\lambda_{i}\in \mathbb{R}^{+}$ is the intensity of the process between $\tau_{i}$ and $\tau_{i+1}$. The likelihood of the observed process data is
+$$
+\mathcal{L}(y([0,T])|\tau_{1:k},k,\lambda_{0:k})=\prod_{i=0}^{k}\lambda_{i}^{r_{i}}\mbox{e}^{-\lambda_{i}(\tau_{i+1}-\tau_{i})},
+$$
+where $r_{i}=\int_{\tau_i}^{\tau_{i+1}}y(t)\diff t$ is the number of events between $\tau_{i}$ and $\tau_{i+1}$.
+
+The $(k+1)$ intensities will be assumed to follow the independent conjugate priors, $\lambda_{i}\sim\mbox{Gamma}(\alpha, \beta)$.
+
+For posterior inference the intensities $\lambda_{0:k}$ can be integrated out to give the posterior distribution for the changepoints, which is known only up to proportionality through
+\begin{equation}
+\gamma(\tau_{1:k})= \nu^{k}\mbox{e}^{-\nu T}\prod_{i=0}^{k}\frac{\beta^\alpha}{\Gamma\left(\alpha\right)}\frac{\Gamma\left(\alpha+r_{ i}\right)\hspace{2ex}}{\left(\beta+\tau_{i+1}-\tau_{i}\right)^{\alpha+r_{i}}},\label{eq:dist.gamma}
+\end{equation}
+since $Z$ does not have an analytical solution.
+
+And it follows that, conditional on the changepoints $\tau_{1:k}$, $\{\lambda_i\}$, for $i=0\ldots,k$, have the independent posterior distributions
+\begin{equation}
+\left[\lambda_i | \tau_{1:k},k,y([0,T])\right] \equiv \mbox{Gamma}\left(\alpha+r_i,\beta+\tau_{i+1}-\tau_i\right).
+\label{eq:posteriorlambda}
+\end{equation}
+
+
+\section{Shot noise Cox process}\label{sec:sncp}
+SNCP. See \cite{turcotte15}.
+
+
+
+
+\section{RJMCMC}
+For a conjugate model the RJMCMC moves employed are similar to those of \cite{green05}, who also applies them to a Poisson process, and \cite{denison02} where the transitions are: (a) `birth' of a new changepoint uniformly chosen over the time period; (b) `death' of a randomly chosen changepoint; and (c) `move' a  randomly chosen changepoint uniformly over some interval around the changepoint. 
+
+For the non-conjugate model another transition is added (d) `move' the parameter, see \cite{turcotte15} for a desccription of the proposal distributions for the transitions.
+
+
+
+\section{SMC}
+Refer to \cite{turcotte15} for a detailed description of the algorithm.
+
+
+\bibliographystyle{plainnat}
+\bibliography{algorithm}
+
+
+ 
+
+
+\end{document}

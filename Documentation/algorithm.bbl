@@ -1,0 +1,24 @@
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Denison et~al.(2002)Denison, Holmes, Mallick, and Smith]{denison02}
+D.~G.~T. Denison, C.~C. Holmes, B.~K. Mallick, and A.~F.~M. Smith.
+\newblock \emph{Bayesian Methods for Nonlinear Classification and Regression}.
+\newblock Wiley, West Sussex, 2002.
+
+\bibitem[Green(1995)]{green05}
+P.~J. Green.
+\newblock Reversible jump {M}arkov chain {M}onte {C}arlo computation and
+  {B}ayesian model determination.
+\newblock \emph{Biometrika}, 82:\penalty0 711--732, 1995.
+
+\bibitem[Turcotte and Heard(2015)]{turcotte15}
+M.~J.~M. Turcotte and N.~A Heard.
+\newblock Adaptive sequential monte carlo for multiple changepoint analysis.
+\newblock \emph{to be submitted}, 2015.
+
+\end{thebibliography}
