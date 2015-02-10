@@ -35,4 +35,4 @@ This is the source code used in the following paper:
 Turcotte, M. J. M and Heard, N. A. Adaptive sequential Monte Carlo for multiple changepoint analysis. 2015
 
 ##Licensing
-MIT License  Turcotte, Melissa and Heard, Nicholas
+Copyright &copy;  2015. Melissa Turcotte and Nicholas Heard. Released under the MIT License.
