@@ -1,10 +1,10 @@
 #ifndef ARGUMENT_OPTIONS_SMC_HPP
 #define ARGUMENT_OPTIONS_SMC_HPP
 #include <getopt.h>
-using namespace std;
 #include <string>
 #include <stdlib.h>
 #include <iostream>
+using namespace std;
 
 class ArgumentOptionsSMC{
  public:

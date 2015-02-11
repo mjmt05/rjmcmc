@@ -2,10 +2,10 @@
 #define ARGUMENT_OPTIONS_HPP
 #include <getopt.h>
 #include <stdlib.h>
-using namespace std;
+
 #include <iostream>
 #include <string>
-
+using namespace std;
 
 class ArgumentOptions{
  public:

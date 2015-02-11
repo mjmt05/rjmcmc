@@ -1,4 +1,4 @@
-CXX=g++
+CXX=g++ $(INCLUDES)
 CXXFLAGS=-Wall -Wno-long-long -pedantic -march=native -O3
 INCLUDES=-I/opt/local/include #-I/usr/include/gsl 
 LDLIBS=-L/opt/local/lib -lgsl -lgslcblas -lm
@@ -9,9 +9,9 @@ HEADERS=decay_function.hpp univariate_function.hpp RJMCMC.hpp particle.hpp SMC_P
 
 all: mainRJ_example mainSMC_example
 
-mainRJ_example: mainRJ_example.cpp $(OBJS) $(HEADERS)
+mainRJ_example: mainRJ_example.cpp $(OBJS) #$(HEADERS)
 
-mainSMC_example: mainSMC_example.cpp $(OBJS) $(HEADERS)
+mainSMC_example: mainSMC_example.cpp $(OBJS)#$(HEADERS)
 
 %.o: %.cpp %.hpp
 
