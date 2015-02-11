@@ -1,14 +1,14 @@
-#include "SMC_PP_MCMC_nc.h"
-#include "Data.h"
-#include "Poisson_process_model.h"
+#include "SMC_PP_MCMC_nc.hpp"
+#include "Data.hpp"
+#include "Poisson_process_model.hpp"
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
 #include <getopt.h>
-#include "argument_options_smc.h"
-#include "probability_model.h"
-#include "SNCP.h"
-#include "function_of_interest.h"
+#include "argument_options_smc.hpp"
+#include "probability_model.hpp"
+#include "SNCP.hpp"
+#include "function_of_interest.hpp"
 using namespace std;
 
 

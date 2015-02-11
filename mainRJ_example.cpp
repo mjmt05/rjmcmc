@@ -1,13 +1,13 @@
-#include "RJMCMC_PP.h"
-#include "Data.h"
-#include "Poisson_process_model.h"
+#include "RJMCMC_PP.hpp"
+#include "Data.hpp"
+#include "Poisson_process_model.hpp"
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
 #include <getopt.h>
-#include "argument_options.h"
-#include "probability_model.h"
-#include "SNCP.h"
+#include "argument_options.hpp"
+#include "probability_model.hpp"
+#include "SNCP.hpp"
 using namespace std;
 
 
