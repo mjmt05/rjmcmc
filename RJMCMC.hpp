@@ -1,18 +1,22 @@
-#ifndef RJMCMC_H
-#define RJMCMC_H
+#ifndef RJMCMC_HPP
+#define RJMCMC_HPP
 
-#include <cmath>
-#include <time.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_rng.h>
-#include "particle.h"
-#include "Data.h"
-#include "histogram_type.h"
+
+#include "particle.hpp"
+#include "histogram_type.hpp"
+#include "mc_divergence.hpp"
+using namespace std;
 #define LOG_TWO log(2.0)
 #define LOG_THREE log(3.0)
 #define ONE_THIRD 1.0/3.0;
+#include "Data.hpp"
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_rng.h>
+#include <cmath>
+#include <time.h>
 
-using namespace std;
+
+
 
 
 template< class T>
@@ -182,6 +186,8 @@ template< class T>
   void rj_construct();
 };
 
+
+
 template<class T>
 rj<T>::rj(double begin, double end, long long int its, int max, long long int thin, long long int burnin, bool calcKL,Particle<T> * initial,int se, bool store_sample)
 :m_start_time(begin),m_end_time(end),m_iterations(its),m_max_theta(max),m_thinning(thin),m_burnin(burnin),m_initial_sample(initial),m_calculate_div(calcKL),m_seed(se),m_storing_sample(store_sample),m_start_cps(begin)
@@ -205,8 +211,9 @@ template<class T>
     delete m_current_particle;
   }
 
-  for(typename std::map<unsigned int,Particle<T> *>::iterator iter = m_MAPs.begin(); iter != m_MAPs.end(); ++iter)
+  for(typename std::map<unsigned int,Particle<T> *>::iterator iter = m_MAPs.begin(); iter != m_MAPs.end(); ++iter){
     delete iter->second;
+  }
 
   m_MAPs.erase(m_MAPs.begin(),m_MAPs.end());
 
@@ -706,7 +713,7 @@ template<class T>
 
 
 template<class T>
-  void rj<T>::destroy_sample(){
+void rj<T>::destroy_sample(){
  
   for (long long int i=m_size_of_sample-1; i>0; i--){
  
@@ -964,5 +971,6 @@ template<class T>
 	m_MAP_dimension = current_dimension;
     }
 }
-#endif
 
+
+#endif

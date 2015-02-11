@@ -1,7 +1,7 @@
-#ifndef DECAY_FN_H
-#define DECAY_FN_H
+#ifndef DECAY_FN_HPP
+#define DECAY_FN_HPP
 
-#include "univariate_function.h"
+#include "univariate_function.hpp"
 #include <cmath>
 #include <cfloat>
 

@@ -1,5 +1,5 @@
-#ifndef UV_FN_H
-#define UV_FN_H
+#ifndef UV_FN_HPP
+#define UV_FN_HPP
 
 class Univariate_Function
 {

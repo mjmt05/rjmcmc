@@ -1,5 +1,5 @@
-#ifndef PARTICLE_H
-#define PARTICLE_H
+#ifndef PARTICLE_HPP
+#define PARTICLE_HPP
 
 #include <iostream>
 #include <cmath>
@@ -53,10 +53,6 @@ class Particle
   void swap( T * const, T * const);
 
 };
-
-
-
-
 
 template<class T> 
 int Particle<T>::particleCount=0;
@@ -347,6 +343,7 @@ bool Particle<T>::operator==(const Particle<T> *right) const{
 
   return true;
 }
+
 
 #endif
 

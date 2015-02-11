@@ -1,19 +1,20 @@
-#ifndef SMC_PP_H
-#define SMC_PP_H
+#ifndef SMC_PP_HPP
+#define SMC_PP_HPP
 
+#include "particle.hpp"
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+
+#include <cmath>
+#include "changepoint.hpp"
+
+using namespace std;
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include "particle.h"
-#include "Data.h"
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_rng.h>
-#include <cmath>
-#include <time.h>
-#include "changepoint.h"
+#include "time.h"
 
 
-using namespace std;
 
 template<class T>
 class SMC_PP
@@ -91,7 +92,6 @@ protected:
     unsigned int m_num_ESS;
 
 };
-
 template<class T>
 SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
 :m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),MCMC_only(doMCMC),seed(s)
@@ -553,6 +553,7 @@ void SMC_PP<T>::print_sample_birth_times(int ds){
   }
  }
     
+
 
 
 #endif
