@@ -174,7 +174,7 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << endl;
 
   cerr << "Example: Poisson process" << endl;
-  cerr << programname << " --intervals 112 --grid 112 --cpprior $(echo '2.0/112.0' | bc -l)  --writeess --mean coal_data_renormalised.txt 0 112" << endl;
+  cerr << programname << " --intervals 112 --grid 112 --cpprior $(echo '2.0/112.0' | bc -l) --essthreshold 0.3 --writeess --mean -z coal_data_renormalised.txt 0 112" << endl;
   exit(status);
 
 }

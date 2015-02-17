@@ -22,6 +22,7 @@ make mainSMC_example
 ./mainSMC_example -h
 ```
 
+Use the default examples for SMC to get results from the paper, see reference.
 
 ##Data Format
 The data file should contain space delimited values, refer to the two example data files shot_noise.txt and coal_data_renormalised.txt.
@@ -32,7 +33,8 @@ Some brief description of the algorithm and the model provided in the Documentat
 ##Reference
 This is the source code used in the following paper:
 
-Turcotte, M. J. M and Heard, N. A. Adaptive sequential Monte Carlo for multiple changepoint analysis. 2015
+Adaptive sequential Monte Carlo for multiple changepoint analysis. 2015 
+<!-- Turcotte, M. J. M and Heard, N. A. Adaptive sequential Monte Carlo for multiple changepoint analysis. 2015 -->
 
-##Licensing
-Copyright &copy;  2015. Melissa Turcotte and Nicholas Heard. Released under the MIT License.
+<!-- ##Licensing
+Copyright &copy;  2015. Melissa Turcotte and Nicholas Heard. Released under the MIT License. -->
