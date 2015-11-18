@@ -32,7 +32,7 @@ class pp_model : public probability_model{
    virtual double get_alpha(){return m_alpha;}
    virtual double get_beta(){return m_beta;}
    double log_likelihood_up_to(double t);
-   double log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r);
+   virtual double log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r);
    double log_likelihood_length_and_count(double t, unsigned long long int r);
    double log_likelihood_length_and_count(){ return log_likelihood_length_and_count(m_t,m_r); }
    double poisson_regression_log_likelihood_interval(unsigned long long int i1, unsigned long long int i2);

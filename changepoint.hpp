@@ -48,7 +48,6 @@ class changepoint{
   double get_changepoint( changepoint* cpobj ){ return cpobj->getchangepoint(); } 
 
  private:
-
   double m_likelihood,m_mean_value,m_var_value;
   double m_double;
   double * m_vector_double;

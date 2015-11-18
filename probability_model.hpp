@@ -21,6 +21,7 @@ class probability_model{
   void construct();
   virtual double log_likelihood_interval(changepoint *, changepoint *) = 0 ;
   virtual double log_likelihood_interval(double t1, double t2){ return 0;}
+  virtual double log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){return 0;}
   virtual void propose_new_parameters(Particle<changepoint>*, int, unsigned int,changepoint *, changepoint *){};//if third argument 0 birth if 1 death if 2 move changepoint if 3 move parameter
   virtual double calculate_prior_ratio(Particle<changepoint>*,unsigned int){return 0;};//if argument 0 birth if 1 death if 2 move changepoint if 3 move parameter
   virtual double proposal_ratio(Particle<changepoint>*,unsigned int){return 0;};//if 0 birth if 1 death if 2 move changepoint if 3 move parameter
