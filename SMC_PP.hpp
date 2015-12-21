@@ -52,6 +52,7 @@ public:
   void store_ESS();
   void print_sample_birth_times(int);
   void print_size_sample_A(int ds);
+  void sample_from_prior() {m_sample_from_prior = true;}
 
 protected:
 
@@ -90,61 +91,59 @@ protected:
     int * m_process_observed;
     int seed;
     unsigned int m_num_ESS;
+  bool  m_sample_from_prior;
 
 };
 template<class T>
 SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
 :m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),MCMC_only(doMCMC),seed(s)
 {
-
+  long long int sample_size = m_max_sample_size_A;
+  if (varyB) {
+    sample_size /= m_num;
+  }
+  m_sample_from_prior = false;
   m_store_ESS=0;
-    
   if(MCMC_only){
     m_sample_dummy=NULL;
   }
   else{
     m_sample_dummy = new Particle<T>**[m_num];
-    m_sample_dummy[0] = new Particle<T>*[m_num*m_max_sample_size_A];
-    for(int i=1; i<m_num; i++)
-      m_sample_dummy[i]=m_sample_dummy[i-1]+m_max_sample_size_A;
+    for (int i = 0; i < m_num; i++) {
+      m_sample_dummy[i] = new Particle<T> *[sample_size];
+    }
   }
-
   m_sample_A = new Particle<T> **[m_num];
   if(!MCMC_only){
     m_sample_B = new Particle<T>**[m_num];
     for(int i=0; i<m_num; i++)
-      m_sample_A[i]= new Particle<changepoint>*[m_max_sample_size_A];
+      m_sample_A[i]= new Particle<T>*[sample_size];
   }else{
     m_sample_B=NULL;
-  }    
+  }
+   
   if (MCMC_only){
     m_weights=NULL;
     m_cum_exp_weights=NULL;
-  }
-  else{
+  } else {
     m_weights = new double *[m_num];
     m_cum_exp_weights = new double *[m_num];
-      
-    m_weights[0] = new double[m_num*m_max_sample_size_A];
-    m_cum_exp_weights[0] = new double[m_num*m_max_sample_size_A];
     
-    for(int i=1; i<m_num; i++){
-      m_weights[i]=m_weights[i-1]+m_max_sample_size_A;
-
-      m_cum_exp_weights[i]=m_cum_exp_weights[i-1]+m_max_sample_size_A;
+    for (int i = 0; i < m_num; i++) {
+      m_weights[i] = new double[sample_size];
+      m_cum_exp_weights[i] = new double[sample_size];
     }
   }
-
+ 
   m_exp_weights = new double * [m_num];
-  m_exp_weights[0] = new double[m_num*m_max_sample_size_A];
+  for (int i = 0; i < m_num; i++) {
+    m_exp_weights[i] = new double[sample_size];
+  }
   m_sum_exp_weights=new double[m_num];
   m_sum_squared_exp_weights=new double[m_num];
-  for(int i=1; i<m_num; i++){
-    m_exp_weights[i]=m_exp_weights[i-1]+m_max_sample_size_A;
-  }
   m_num_ESS=0;
 
-  for(unsigned long long int i=0; i<m_max_sample_size_A; i++){
+  for(unsigned long long int i=0; i<sample_size; i++){
     for(int j=0; j<m_num; j++){
       m_exp_weights[j][i]=1;
     }
@@ -208,26 +207,36 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
 
 template<class T>
 SMC_PP<T>::~SMC_PP(){
+  long long int sample_size = m_max_sample_size_A;
+  long long int i;
+  if (m_variable_B) {
+    sample_size /= m_num;
+  }
 
   if(m_weights&&!MCMC_only){
-    delete [] m_weights[0];
+    for (i = 0; i < m_num; i++) {
+      delete [] m_weights[i];
+    }
     delete [] m_weights;
   }
 
   if(m_cum_exp_weights){
-    delete [] m_cum_exp_weights[0];
+    for (i = 0; i < m_num; i++) {
+      delete [] m_cum_exp_weights[i];
+    }
     delete []  m_cum_exp_weights;
   }
     
   gsl_rng_free(r);
-  delete [] m_exp_weights[0];
+  for (i = 0; i < m_num; i++) {
+    delete [] m_exp_weights[i];
+  }
   delete [] m_exp_weights;
   delete [] m_sum_exp_weights;
   delete [] m_sum_squared_exp_weights;
   delete [] m_max_weight;
    
   if (m_sample_dummy&&!MCMC_only){
-    delete [] m_sample_dummy[0];
     delete []  m_sample_dummy;
   }
 
@@ -255,12 +264,12 @@ SMC_PP<T>::~SMC_PP(){
 template<class T>
 void SMC_PP<T>::store_ESS(){
   m_store_ESS=1;
-
+  int length = m_sample_from_prior ? m_num_of_intervals : m_num_of_intervals - 1; 
   m_ESS = new double * [m_num];
-  m_ESS[0] = new double[m_num*(m_num_of_intervals-1)];
+  m_ESS[0] = new double[m_num*length];
   
   for(int i=1; i<m_num; i++)
-    m_ESS[i]=m_ESS[i-1]+m_num_of_intervals-1;
+    m_ESS[i]=m_ESS[i-1] + length;
 
 }
 
@@ -275,23 +284,19 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
   old_sum_weights = new double[m_num];
    
   for (unsigned int i = 0; i<m_num_of_intervals; i++){
-
     iters=i;
     for(int ds=0; ds<m_num; ds++){
       old_sum_weights[ds] = log(m_sum_exp_weights[ds]) +m_max_weight[ds];
     }
-            
     if (MCMC_only){           
       sample_particles(m_start,m_start+m_change_in_time*(i+1));
     }
     else{
       sample_particles(m_start+m_change_in_time*i,m_start+m_change_in_time*(i+1));
     }
-
     if(i>0 && MCMC_only==0){
       permute_sample();
     }
-
     if (!MCMC_only){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){
@@ -305,12 +310,16 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
- 
     for(int ds=0; ds<m_num; ds++){
-      if (m_process_observed[ds]>1 && !MCMC_only){
+      if ((m_process_observed[ds]>1 || m_sample_from_prior) && !MCMC_only){
       	ESS[ds]=calculate_ESS(ds);
-	if(m_store_ESS)
-	  m_ESS[ds][i-1]=ESS[ds];
+	if(m_store_ESS){
+	  if (!m_sample_from_prior) {
+	    m_ESS[ds][i-1]=ESS[ds];
+	  } else {
+	    m_ESS[ds][i] = ESS[ds];
+	  }
+	}
 	/*BF[ds] = log(m_sum_exp_weights[ds]) + m_max_weight[ds]-old_sum_weights[ds];
      	  if (BF[ds] < log(0.1) && ESS[ds]>m_ESS_threshold){
 	  cout<<"BF "<<ds<<" "<<m_start+m_change_in_time*(i)<<endl;
@@ -327,9 +336,20 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
- 
+
+    if (MCMC_only) {
+      long long int sample_size = m_max_sample_size_A;
+      if (m_variable_B) {
+	sample_size /= m_num;
+      }
+      for(unsigned long long int j=0; j<sample_size; j++){
+	for(int ds=0; ds<m_num; ds++){
+	  m_exp_weights[ds][j]=1;
+	}
+      }
+    }
+
     calculate_function_of_interest(m_start+m_change_in_time*(i),m_start+m_change_in_time*(i+1));
- 
     if(m_online_num_changepoints){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){      
@@ -340,6 +360,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
+    
   }
 
   delete [] ESS;
@@ -381,8 +402,13 @@ void SMC_PP<T>::calculate_exp_weights(int ds){
   m_max_weight[ds]=m_weights[ds][find_max(m_weights[ds],m_sample_size_A[ds])];
 
   for (unsigned long long int i=0; i<m_sample_size_A[ds]; i++){
-    m_exp_weights[ds][i]=exp(m_weights[ds][i]-m_max_weight[ds]);
+    if (isinf(m_weights[ds][i])) {
+      m_exp_weights[ds][i] = 0;
+    } else {
+      m_exp_weights[ds][i]=exp(m_weights[ds][i]-m_max_weight[ds]);
+    }
     m_sum_exp_weights[ds]+=m_exp_weights[ds][i];
+
     m_cum_exp_weights[ds][i]=m_sum_exp_weights[ds];
   }
 }
@@ -459,7 +485,7 @@ void SMC_PP<T>::print_sample_A(int ds){
         //exit(1);
     }
     for(unsigned long long int i=0; i<m_sample_size_A[ds]; i++){
-      outfile<<*m_sample_A[ds][i]<<endl;
+      outfile<<*m_sample_A[ds][i];
     }
     outfile.close();
 }
@@ -516,7 +542,8 @@ void SMC_PP<T>::print_ESS(int ds, const char * file){
     return;
     //exit(1);
   }
-  for(unsigned int i=0; i<(m_num_of_intervals-1); i++){
+  int length = m_sample_from_prior ? m_num_of_intervals : m_num_of_intervals - 1; 
+  for(unsigned int i=0; i<length; i++){
     outfile<<m_ESS[ds][i]<<' ';
   }
   outfile<<endl;

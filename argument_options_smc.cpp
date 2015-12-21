@@ -23,6 +23,8 @@ struct option ArgumentOptionsSMC::lopts[] = {
     {"essthreshold",required_argument,NULL,'f'},
     {"writeess",no_argument,NULL,'w'},
     {"importsampling", no_argument, NULL, 'z'},
+    {"spacingprior", no_argument, NULL,  'P'},
+    {"rejectionsampling", no_argument, NULL, 'r'},
     {NULL, 0, NULL, 0}
 };
 
@@ -45,11 +47,13 @@ ArgumentOptionsSMC::ArgumentOptionsSMC(){
   m_ESS_threshold = 0.5;
   m_print_ESS = 0;
   m_importance_sampling = 0;
+  m_rejection_sampling = 0;
+  m_spacing_prior = 0;
 }
 
 void ArgumentOptionsSMC::parse(int argc, char * argv[]){
 
-   const char *sopts="hi:p:d:t:m:n:a:b:s:lg:evwc:f:z";
+   const char *sopts="hi:p:d:t:m:n:a:b:s:lg:evwc:f:zPr";
 
   //Parse arguments
   char opt;
@@ -106,6 +110,12 @@ void ArgumentOptionsSMC::parse(int argc, char * argv[]){
     case 'z':
       m_importance_sampling = 1;
       break;
+    case 'r':
+      m_rejection_sampling = 1;
+      break;
+    case 'P':
+      m_spacing_prior = 1;
+      break;
     case 'h':
       usage(0,argv[0]);
       break;
@@ -155,7 +165,9 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << "-v | --writecps        write changepoints, intensity, and weights at the final time point, no argument required (default = " << m_write_cps_to_file << ")" << endl;
   cerr << "-w | --writeess        write ESS to file (default = " << m_print_ESS << ")" << endl;
   cerr << "-z | --importsampling  do importance sampling for the coal data, no argument required (default = " << m_importance_sampling << ")" << endl;
-
+  cerr << "-P | --spacingprior      use spacing prior for the coal data, no argument required (default = " << m_spacing_prior << ")" << endl;
+  cerr << "-r | --rejectionsampling use rejection sampling rather than mcmc for the coal data, no argument required (default = " << m_rejection_sampling << ")" << endl;
+ 
   cerr << endl;
   cerr << "Optional parameters to set when using RJ to sample on each interval" << endl;
   cerr << endl;
@@ -165,7 +177,6 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << "-m | --movewidth       the allowable move width on either side of the changepoint (default = (intervalwidth)/20)" << endl;
   cerr << "-e | --emptyintervals  do not allow intervals between changepoints with no datapoints, no argument required (default = " <<  m_disallow_empty_intervals_between_cps << ")" << endl;
 
- 
  
   cerr << endl;
 

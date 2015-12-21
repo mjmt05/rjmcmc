@@ -22,6 +22,7 @@ class Function_of_Interest{
   double ** get_prob_sequential(){return m_prob_last_changepoint_sequential;}
   double ** get_g_sequential(){return m_exp_last_changepoint_sequential;}
   double get_average_distance(){return m_average_distance;}
+  double get_min_distance(){return m_min_distance;}
   double get_variance_distance(){return m_variance_distance;}
   double calculate_variance_prob(int);
   void reset_prob();
@@ -54,6 +55,7 @@ class Function_of_Interest{
    double * m_intensity;
    bool m_cont;
    long double m_average_distance;
+   long double m_min_distance;
    long double m_average_distance_squared;
    double m_variance_distance;
    int m_start_of_sample;

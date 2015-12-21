@@ -36,6 +36,8 @@ class ArgumentOptionsSMC{
   double m_ESS_threshold;
   bool m_print_ESS;
   bool m_importance_sampling;
+  bool m_rejection_sampling;
+  bool m_spacing_prior;
 
   /*RJ paramters when sampling on the intervals over time*/
   int m_burnin;

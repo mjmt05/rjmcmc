@@ -28,9 +28,9 @@ class rj_pp : public rj<changepoint>{
   virtual double log_likelihood_ratio_death(unsigned int);
   virtual double log_likelihood_ratio_move(changepoint *, unsigned int);
   virtual double log_likelihood_ratio_move_parameter(int);
-  virtual double log_prior_ratio_birth() const;
-  virtual double log_prior_ratio_death() const;
-  virtual double log_prior_ratio_move() const;
+  virtual double log_prior_ratio_birth(changepoint *) const;
+  virtual double log_prior_ratio_death(unsigned int) const;
+  virtual double log_prior_ratio_move(changepoint *, unsigned int) const;
   virtual double log_prior_ratio_move_parameter() const;
   virtual double log_proposal_ratio_birth(changepoint *) const;
   virtual double log_proposal_ratio_death(int) const;
@@ -63,6 +63,7 @@ class rj_pp : public rj<changepoint>{
   void initialise_function_of_interest(int,bool=1,bool=1,bool=0,double=0);
   void proposal_type(const char * , void *);
   void set_discrete(bool d){m_discrete=d;}
+  void set_spacing_prior() {m_spacing_prior = m_random_nu?false:true;}
 
   private:
   double m_move_tolerance;
@@ -80,6 +81,7 @@ class rj_pp : public rj<changepoint>{
   bool m_one_sided_foi;
   double m_nu, m_log_nu;//fixed paramater nu for PP prior on changepoints.
   bool m_random_nu;//if true, nu~Gamma(alpha_nu,beta_nu).
+  bool m_spacing_prior;
   double m_alpha_nu, m_beta_nu;//gamma hyperparamaters for unknown nu for PP prior on changepoints.
   bool m_discrete;
      

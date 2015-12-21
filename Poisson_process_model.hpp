@@ -41,6 +41,7 @@ class pp_model : public probability_model{
    double calculate_log_posterior_predictive_df( double t, unsigned long long int r, bool lower_tail = true );//posterior predictive distribution function for a future count of r in t units of time, given the current posterior parameters m_alpha_star, m_beta_star.
    double calculate_waiting_times_log_predictive_df( double increment, bool lower_tail, bool two_sided, bool increment_parameters );
    double calculate_event_count_log_predictive_df( double increment, bool lower_tail, bool two_sided, bool increment_parameters );
+  virtual void use_random_mean(int seed);
    
   
   private:
@@ -57,6 +58,7 @@ class pp_model : public probability_model{
     double* m_cum_intensity_multipliers;//fixed mulitpliers for the intensity in Poisson regression.
     Univariate_Function* m_pp_time_scale;
     double m_shot_noise_rate;
+    bool m_random_mean ;
 };
 
 

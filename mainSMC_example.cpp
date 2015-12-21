@@ -23,6 +23,9 @@ int main(int argc, char *argv[])
   probability_model * ppptr = NULL;
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+    if (o.m_importance_sampling) {
+      ppptr->use_random_mean(o.m_seed);
+    }
   }else{
     ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
   }
@@ -32,10 +35,35 @@ int main(int argc, char *argv[])
   bool dovariable = 0; //for doing a variable sample size approach
   unsigned int num_proposal_histgoram_bins = 40000/o.m_num_intervals; //number of proposal histogram bins for proposing changepoints in the the sncp model
   unsigned int number_of_data_processes = 1;
-  bool only_do_mcmc = 0; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
-  bool calculate_online_estimate_number_of_cps = 0;
+  bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
+  bool calculate_online_estimate_number_of_cps = false;
+  bool sample_from_prior = false;
+  if (o.m_model == "sncp") {
+    o.m_rejection_sampling = false;
+    o.m_spacing_prior = false;
+    o.m_importance_sampling = false;
+    sample_from_prior = false;
+  }
 
-  SMC_PP_MCMC SMCobj(o.m_start, o.m_end, o.m_num_intervals,o.m_particles,o.m_particles,o.m_cp_prior,variance_cp_prior,(probability_model**)&ppptr,number_of_data_processes,dovariable,o.m_calculate_filtering_mean,calculate_online_estimate_number_of_cps,only_do_mcmc,o.m_seed);
+  if (sample_from_prior) {
+    o.m_rejection_sampling = true;
+    o.m_spacing_prior = false;
+  }
+
+  if (o.m_rejection_sampling && !sample_from_prior) {
+    o.m_spacing_prior = true;
+  }
+
+
+  SMC_PP_MCMC SMCobj(o.m_start, o.m_end, o.m_num_intervals,o.m_particles,o.m_particles,o.m_cp_prior,variance_cp_prior,(probability_model**)&ppptr,number_of_data_processes,dovariable,o.m_calculate_filtering_mean,calculate_online_estimate_number_of_cps,only_do_mcmc, o.m_rejection_sampling, o.m_seed);
+
+  if (o.m_spacing_prior) {
+    SMCobj.use_spacing_prior();
+  }
+
+  if (sample_from_prior) {
+    SMCobj.sample_from_prior();
+  }
 
   if(o.m_calculate_filtering_mean){
     SMCobj.initialise_function_of_interest(o.m_grid,0,0);
@@ -56,11 +84,12 @@ int main(int argc, char *argv[])
   }else{
     SMCobj.set_RJ_parameters(o.m_thinning,o.m_burnin,o.m_move_width);
   }
+
   SMCobj.set_look_back(1);
 
   SMCobj.set_ESS_threshold(o.m_ESS_threshold);
   
-  if(o.m_print_ESS){
+  if(o.m_print_ESS && !only_do_mcmc){
     SMCobj.store_ESS();
   }
 
@@ -79,11 +108,19 @@ int main(int argc, char *argv[])
     SMCobj.print_intensity(0,"finalintensitySMC.txt");
   }
 
+  if (o.m_spacing_prior) {
+    SMCobj.print_zero_weights(0, "number_zero_weights.txt");
+  }
+
+  if (o.m_rejection_sampling) {
+    SMCobj.print_rejection_sampling_acceptance_rates(0, "acceptance_rates.txt");
+  }
+
   if(o.m_print_ESS){
     SMCobj.print_ESS(0,"ess.txt");
   }
   
- 
+  delete dataobj;
   delete ppptr;  
   return(0);
 }

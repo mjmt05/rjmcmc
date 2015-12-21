@@ -38,11 +38,11 @@ ArgumentOptions::ArgumentOptions(){
   m_write_histograms_to_file = 0;
   m_model = "poisson";
   m_importance_sampling = 0;
-}
+ }
 
 void ArgumentOptions::parse(int argc, char * argv[]){
 
-   const char *sopts="hi:d:t:c:m:n:a:b:s:lg:evwz";
+   const char *sopts="hi:d:t:c:m:n:a:b:s:lg:evwzpr";
 
   //Parse arguments
   char opt;
@@ -129,7 +129,8 @@ void ArgumentOptions::usage(int status,char * programname){
   cerr << "-b | --burnin            number of burnin iterations (default = " << m_burnin << ")" << endl;
   cerr << "-t | --thinning          number of iterations to discard between samples (default = " << m_thinning << ")" <<  endl;
   cerr << "-m | --movewidth         the allowable move width on either side of the changepoint (default = (END-START)/20)" << endl;
-  cerr << "-c | --model             can either be sncp (shot noise cox process) or poisson (poisson process) (default = " << m_model << ")" << endl;
+  cerr << "-c | --model             sncp (shot noise cox process) or poisson (poisson process) or AR (AR process)" << endl;
+  cerr << "                         (default = " << m_model << ")" << endl;
   cerr << "-n | --cpprior           the Poisson process prior parameter for the changepoints (default = " << m_cp_prior << ")" << endl;
   cerr << "-a | --modelprior1       prior parameter 1 (dependent on model), see documentation (default = " << m_gamma_prior_1 << ")" << endl;
   cerr << "-b | --modelprior2       prior parameter 2 (dependent on model), see documentation (default = " << m_gamma_prior_2 << ")" << endl;
@@ -142,6 +143,7 @@ void ArgumentOptions::usage(int status,char * programname){
   cerr << "                         no argument required (default = " << m_write_histograms_to_file << ")" << endl;
   cerr << "-z | --importsampling    do importance sampling for the coal data, no argument required (default = " << m_importance_sampling << ")" << endl;
   cerr << endl;
+
 
   cerr << "Example: shot noise cox process model" << endl;
   cerr << programname << " --model sncp --iterations 100000 --burnin 10000 --movewidth 50 --cpprior .0025 --modelprior1 $(echo '2.0/3.0' | bc -l) --modelprior2 .01 --grid 1000 --writehistograms  shot_noise.txt 0 2000" << endl;

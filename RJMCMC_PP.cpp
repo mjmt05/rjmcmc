@@ -1,4 +1,3 @@
-
 #include "RJMCMC_PP.hpp"
 #include "RJMCMC.hpp"
 #include "string.h"
@@ -48,6 +47,7 @@ rj_pp::~rj_pp(){
 }
 
 void rj_pp::rj_pp_construct(){
+  m_spacing_prior = 0;
   m_no_neighbouring_empty_intervals = false;
   m_prop_distribution = 'U';
   m_prop_histogram=NULL;
@@ -96,50 +96,61 @@ void rj_pp::initialise_function_of_interest(int grid, bool g, bool prob, bool in
 changepoint* rj_pp::generate_new_parameter()const {
   double new_value,which;
   which = -1;
-
-  if(m_prop_distribution == 'M'){
-    which = gsl_ran_flat( r, 0, 1 );
-  }
-
-  if (m_prop_distribution == 'U' || (which<0.5 && which>=0)){
-    new_value=gsl_ran_flat( r, m_start_cps, m_end_time );
-  }
-  else if(m_prop_distribution == 'N' || (which>=0.5)){
-    new_value = gsl_ran_gaussian (r, m_prop_distribution_sd);
-    new_value += m_prop_distribution_mean;
-    double value_theta_right = m_end_time;
-    double value_theta_left = m_start_cps;
-    double L =  value_theta_right-value_theta_left;
-    if (new_value>value_theta_right){
-      double delta = new_value - value_theta_right;
-      int DL = static_cast<int>(floor(delta/L));
-      if (DL % 2 == 0){
-	new_value = value_theta_right - (delta/L-DL)*L;
-      }
-      else{
-	new_value = value_theta_left + (delta/L - DL)*L;
-      }
+  changepoint *cpobj;
+  
+  if (m_discrete) {
+    bool alreadyexists = true;
+    cpobj = new changepoint(0, 0);
+    while (alreadyexists) {
+      new_value = gsl_rng_uniform_int(r, m_end_time - 1) + 1;
+      cpobj -> setchangepoint(new_value);
+      alreadyexists = m_current_particle->does_particle_exist(cpobj);
+    }
+  } else {
+    if(m_prop_distribution == 'M'){
+      which = gsl_ran_flat( r, 0, 1 );
     }
 
-    if (new_value<value_theta_left){
-      double delta = value_theta_left - new_value;
-      int DL = static_cast<int>(floor(delta/L));
-      if (DL % 2 == 0){           
-	new_value = value_theta_left + ((delta/L)-DL)*L;
-      }
-      else{
-	new_value = value_theta_right - (delta/L-DL)*L;
-      }
+    if (m_prop_distribution == 'U' || (which<0.5 && which>=0)){
+      new_value=gsl_ran_flat( r, m_start_cps, m_end_time );
     }
-  }else if(m_prop_distribution == 'H'){
-    new_value = m_prop_histogram->sample_by_differences();
-  }else{
-    cerr << "can't recognized proposal distribution in RJMCMC_PP.h" << endl;
-    exit(1);
+    else if(m_prop_distribution == 'N' || (which>=0.5)){
+      new_value = gsl_ran_gaussian (r, m_prop_distribution_sd);
+      new_value += m_prop_distribution_mean;
+      double value_theta_right = m_end_time;
+      double value_theta_left = m_start_cps;
+      double L =  value_theta_right-value_theta_left;
+      if (new_value>value_theta_right){
+	double delta = new_value - value_theta_right;
+	int DL = static_cast<int>(floor(delta/L));
+	if (DL % 2 == 0){
+	  new_value = value_theta_right - (delta/L-DL)*L;
+	}
+	else{
+	  new_value = value_theta_left + (delta/L - DL)*L;
+	}
+      }
+
+      if (new_value<value_theta_left){
+	double delta = value_theta_left - new_value;
+	int DL = static_cast<int>(floor(delta/L));
+	if (DL % 2 == 0){           
+	  new_value = value_theta_left + ((delta/L)-DL)*L;
+	}
+	else{
+	  new_value = value_theta_right - (delta/L-DL)*L;
+	}
+      }
+    }else if(m_prop_distribution == 'H'){
+      new_value = m_prop_histogram->sample_by_differences();
+    }else{
+      cerr << "can't recognized proposal distribution in RJMCMC_PP.h" << endl;
+      exit(1);
+    }
+    cpobj = new changepoint(new_value,0);
   }
-    
   //    unsigned int new_data_index = m_discrete? get_data_index(new_value,0) : 0; if !m_discrete, delay finding index until neighbouring changepoints are identified.
-  changepoint* cpobj = new changepoint(new_value,0);
+  
    
   return(cpobj);
 }
@@ -165,7 +176,7 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
     changepoint *cpobj_left = m_current_particle->get_theta_component(position-1);
 
     /* if there is an empty interval for a discrete time process ignore iteration */
-    if(m_discrete){
+    /*if(m_discrete){
        long long int r=cpobj_right->getdataindex();
        long long int n=new_value->getdataindex();
        long long int l=cpobj_left->getdataindex();
@@ -175,7 +186,7 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
       if((r-n)<0){
 	return(-1e300);
        }
-    }
+       }*/
 
     /* if there is an empty interval ignore iteration for cts time process*/
     if(m_no_neighbouring_empty_intervals && !m_discrete){
@@ -286,8 +297,28 @@ changepoint* rj_pp::move_parameter(unsigned int index_theta_move) const{
     if(value_theta_left<m_start_cps){
       value_theta_left=m_start_cps;
     }
-
-    double new_value = gsl_ran_flat( r, value_theta_move-m_move_tolerance, value_theta_move+m_move_tolerance );//(2.0*m_move_tolerance)*(double)rand()/(double)RAND_MAX+value_theta_move-m_move_tolerance;
+    changepoint *cpobj;
+    double new_value;
+    if (m_discrete) {
+      double rightvalue = min((int)value_theta_move + (int) m_move_tolerance, (int)value_theta_right);
+      double leftvalue = min(max(0, (int)value_theta_move - (int)m_move_tolerance), (int)value_theta_left);
+      if (leftvalue - rightvalue - 2 > 1){
+	double newposition = gsl_rng_uniform_int(r, leftvalue - rightvalue - 2);
+	new_value = newposition + rightvalue;
+	if (new_value == value_theta_move) {
+	  new_value += 1;
+	}
+	cpobj = new changepoint(new_value, (int)new_value);
+	return (cpobj);
+      } else {
+	new_value = value_theta_move;
+	cpobj = new changepoint(new_value, cpobj_move->getdataindex());
+	return (cpobj);
+      }
+    }
+      
+      
+    new_value = gsl_ran_flat( r, value_theta_move-m_move_tolerance, value_theta_move+m_move_tolerance );//(2.0*m_move_tolerance)*(double)rand()/(double)RAND_MAX+value_theta_move-m_move_tolerance;
  
    
     double L =  value_theta_right-value_theta_left;
@@ -318,7 +349,7 @@ changepoint* rj_pp::move_parameter(unsigned int index_theta_move) const{
       }
     }
 
-    changepoint* cpobj = new changepoint(new_value,0);
+    cpobj = new changepoint(new_value,0);
     m_pm->set_data_index(cpobj,0,cpobj_left,cpobj_right);
 
     return(cpobj);
@@ -342,7 +373,7 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
     }
 
     /* if discrete check to make sure no empty intervals*/  
-    if(m_discrete){
+    /*if(m_discrete){
       long long int r=cpobj_right->getdataindex();
       long long int m=new_theta->getdataindex();
       long long int l=cpobj_left->getdataindex();
@@ -357,7 +388,7 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
       if((r-m)<0)
       return(-1e300);
 
-    }
+      }*/
 
     double likelihood_contribution_right = m_pm->log_likelihood_interval(new_theta, cpobj_right);
     new_theta->setlikelihood(likelihood_contribution_right);
@@ -396,30 +427,50 @@ double rj_pp::log_likelihood_ratio_move_parameter(int k) {
   return(log_likelihood_ratio);
 }
 
-double rj_pp::log_prior_ratio_birth() const{
+double rj_pp::log_prior_ratio_birth(changepoint *newtheta) const{
   double prior=0;
- if(!m_conjugate)
+
+  if (m_discrete) {
+    return m_log_nu + log(1-m_nu);
+  }
+  if(!m_conjugate)
    prior= m_pm->calculate_prior_ratio(m_current_particle,0);
 
-  if(!m_random_nu)
-    return (prior+m_log_nu);
+ if(!m_random_nu) {
+   if (m_spacing_prior) {
+     prior = m_nu * (m_end_time - newtheta->getchangepoint());
+   }
+   return (prior+m_log_nu);
+ }
 
   return (prior+log((m_alpha_nu + m_k)/(m_beta_nu + m_end_time-m_start_cps)));
 }
 
-double rj_pp::log_prior_ratio_death() const{
+double rj_pp::log_prior_ratio_death(unsigned int thetadelete) const{
   double prior=0;
+
+  if (m_discrete) {
+    return - m_log_nu - log(1-m_nu);
+  }
   if(!m_conjugate)
     prior=m_pm->calculate_prior_ratio(m_current_particle,1);
-  if(!m_random_nu)
+  if(!m_random_nu){
+    if (m_spacing_prior) {
+      prior = m_nu * (m_current_particle->get_theta_component(thetadelete)->getchangepoint() - m_end_time);
+    }
     return (prior-m_log_nu);
+  }
   return (prior+log((m_beta_nu + m_end_time-m_start_cps)/(m_alpha_nu + m_k-1)));
 }
 
-double rj_pp::log_prior_ratio_move() const{
+double rj_pp::log_prior_ratio_move(changepoint *newposition, unsigned int changepointmove) const{
    double prior=0;
   if(!m_conjugate)
     prior=m_pm->calculate_prior_ratio(m_current_particle,2);  
+  if (m_spacing_prior) {
+    prior = m_nu * (m_current_particle->get_theta_component(changepointmove)->getchangepoint()
+		    - newposition->getchangepoint());
+  }
   return (0+prior);
 }
 

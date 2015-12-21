@@ -19,14 +19,6 @@ int main(int argc, char *argv[])
   Data<double> * dataobj = new Data<double>(o.m_datafile,false);
 
 
-  probability_model * ppptr = NULL;
-  if(o.m_model == "poisson"){
-    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
-  }else{
-    ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
-  }
-
-
   int max_cps = 1e9; //if using a different prior for the changepoints theoretically could use have a maximum number of allowed cps in the model, not implemented
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool discrete = 0; //is it a discrete or cts time model
@@ -34,6 +26,13 @@ int main(int argc, char *argv[])
   Particle<changepoint> * initialsample = NULL; //used if you want to start the RJMCMC algorithm with an initial set of changepoints
   bool store_sample = 0; //could store the sample when sampling not recommended.
   unsigned int num_proposal_histgoram_bins = 40000; //number of proposal histogram bins for proposing changepoints in the the sncp model
+
+  probability_model * ppptr = NULL;
+  if(o.m_model == "poisson"){
+    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+  }else if (o.m_model == "sncp") {
+    ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
+  } 
 
   rj_pp rjpobject(o.m_start,o.m_end,o.m_iterations,max_cps,o.m_move_width,o.m_cp_prior,variance_cp_prior,ppptr,o.m_thinning,o.m_burnin,discrete,dovariable,initialsample,o.m_seed,store_sample);
 

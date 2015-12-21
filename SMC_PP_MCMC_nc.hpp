@@ -7,13 +7,14 @@
 #include "RJMCMC_PP.hpp"
 #include "probability_model.hpp"
 #include "function_of_interest.hpp"
+#include "rejection_sampling.hpp"
 #include <list>
 #include <utility>  
 
 class SMC_PP_MCMC : public SMC_PP<changepoint>{
 public:
 
-  SMC_PP_MCMC(double = 0, double = 1, unsigned int = 1, int =0, int=0, double=1, double=0, probability_model ** =0,int=1, bool=0,bool=0, bool=0, bool=0,int=0);
+  SMC_PP_MCMC(double = 0, double = 1, unsigned int = 1, int =0, int=0, double=1, double=0, probability_model ** =0,int=1, bool=0,bool=0, bool=0, bool=0, bool = 0, int=0);
     ~SMC_PP_MCMC();
     virtual void sample_particles(double, double);
     virtual void resample_particles(double,double,int, const char *,int);
@@ -46,14 +47,20 @@ public:
     void set_variable_parameters(Divergence_Type dt, Loss_Function lt, int nb,int ii, long long int mll, int fg=0){m_divergence_type=dt; m_loss_type=lt, m_num_of_bins=nb; m_initial_iterations=ii; m_max_lookup_length=mll;m_foi_grid=fg;}
     void set_proposal_prior(double pp){m_proposal_prior=pp; m_prior_diff=log(m_nu)-log(pp);}
     void non_conjugate(){m_conjugate=0;}
+    void use_spacing_prior();
+    void print_zero_weights(int, const char *);
+    void print_rejection_sampling_acceptance_rates(int, const char *);
     
 
 private:
         probability_model ** m_pm;
         rj_pp ** m_rj_B;
+        rejection_sampling ** m_rejection_sampling;
         rj_pp ** m_rj_A;
 	int m_length_grid;
 	bool m_calculate_intensity;
+        bool m_do_exact_sampling;
+        bool m_use_spacing_prior;
 	Function_of_Interest ** m_functionofinterest;
 	bool m_do_SMC_past;
 	int m_initial_iterations;
@@ -61,11 +68,14 @@ private:
 	bool m_store_sample_sizes;
 	unsigned long long int ** m_sample_sizes;
 	unsigned long long int * m_min_sample_size;
+        unsigned long long int * m_current_sample_size;
 	const char *m_proposal_type;
 	void * m_vec_proposal_type;
 	bool m_neighbouring_intervals;
 	double m_nu, m_var_nu;
-
+       //parameter for enforced spacing when doing rejection sampling;
+        double m_spacing_prior;
+        double m_cp_start;
 
 	//RJ parameters when sampling on the intervals
 	int m_thin;
@@ -80,7 +90,10 @@ private:
 	int m_foi_grid;
 	unsigned long long int m_max_lookup_length;
 	bool m_conjugate;
-
+        double **m_rejection_sampling_acceptance_rate;
+        unsigned int **m_num_zero_weights;
+       
+        void increase_vector(int);
 	static bool MyDataSort(const pair<double,int>&, const pair<double,int>&);
 
 };

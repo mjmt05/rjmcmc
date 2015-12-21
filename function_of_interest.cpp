@@ -210,7 +210,7 @@ double Function_of_Interest::calculate_variance_prob(int sample_size){
    
 void Function_of_Interest::calculate_function(double interval_begin, double interval_end,Particle<changepoint> ** sample,long long int sample_size, double * weights, double sum_weights, double sum_weights_squared, int iters,bool normalise, probability_model * pm){
   double begin;
-
+  m_min_distance = interval_end;
   bool create_weights=0;
   if(!weights)
     create_weights=1;
@@ -246,7 +246,6 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
       sum_weights+=weights[j];
     }
   }
-
   
   if (create_weights){
     weights=new double[sample_size];
@@ -334,6 +333,9 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
 	
 	if(m_online && k==(fe-1)){
 	  m_average_distance+=g*(weights[i]/sum_weights);
+	  if (cpobj->getchangepoint() < m_min_distance && weights[i] > 0) {
+	    m_min_distance = cpobj->getchangepoint();
+	  }
 	  //m_average_distance_squared+=g*g*weights[i];
 	}
 

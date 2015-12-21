@@ -1,11 +1,12 @@
 #include "SMC_PP_MCMC_nc.hpp"
 #define LOG_TWO log(2.0)
 #include "string.h"
+#include <iostream>
 
 bool SMC_PP_MCMC::MyDataSort(const pair<double,int>& lhs, const pair<double,int>& rhs){return (lhs.first > rhs.first);}
 
-SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int sizeA, int sizeB, double nu, double v_nu, probability_model ** pm,int num_data,bool varyB,bool intensity,bool dochangepoint,bool doMCMC, int s)
-:SMC_PP<changepoint>(start,end,intervals,sizeA,sizeB,num_data,varyB,dochangepoint,doMCMC,s),m_pm(pm),m_calculate_intensity(intensity)
+SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int sizeA, int sizeB, double nu, double v_nu, probability_model ** pm,int num_data,bool varyB,bool intensity,bool dochangepoint,bool doMCMC, bool exact_sampling, int s)
+  :SMC_PP<changepoint>(start,end,intervals,sizeA,sizeB,num_data,varyB,dochangepoint,doMCMC,s),m_pm(pm),m_calculate_intensity(intensity), m_do_exact_sampling(exact_sampling)
 {
   m_nu = nu;
   m_var_nu = v_nu;
@@ -14,22 +15,44 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
   m_proposal_prior=m_nu;
 
   m_conjugate=true;
-
+  m_use_spacing_prior = false;
   m_functionofinterest=NULL;
   m_do_SMC_past=0;
   m_length_grid=0;
- 
+  if (m_do_exact_sampling) {
+    m_variable_B = 0;
+  }
+  m_rejection_sampling_acceptance_rate = NULL;
+  m_num_zero_weights = NULL;
+
   if(MCMC_only){
     m_rj_A=new rj_pp*[m_num];
     for(int ds=0; ds<m_num; ds++){
       m_rj_A[ds]=NULL;}
     m_rj_B=NULL;
+    m_rejection_sampling = NULL;
+    m_do_exact_sampling = 0;
   }else{
-    m_rj_B=new rj_pp*[m_num];
-    for(int ds=0; ds<m_num; ds++){
-      m_rj_B[ds]=NULL;}
+    if (m_do_exact_sampling) {
+      m_rejection_sampling = new rejection_sampling *[m_num];
+      for (int ds = 0; ds < m_num; ds++) {
+	m_rejection_sampling[ds] = NULL;
+      }
+      m_rejection_sampling_acceptance_rate = new double *[m_num];
+      m_rejection_sampling_acceptance_rate[0] = new double[m_num * m_num_of_intervals];
+      for (int i = 1; i < m_num; i++) {
+	m_rejection_sampling_acceptance_rate[i] = m_rejection_sampling_acceptance_rate[i-1] + m_num_of_intervals;
+      }
+    } else {
+      m_rj_B=new rj_pp*[m_num];
+      for(int ds=0; ds<m_num; ds++){
+	m_rj_B[ds]=NULL;
+      }
+    }
     m_rj_A=NULL;
   }
+
+  m_spacing_prior = m_change_in_time;
   
   m_neighbouring_intervals=0;
 
@@ -46,9 +69,11 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
   m_sample_sizes=NULL;
   if(m_variable_B){
     m_min_sample_size = new unsigned long long int[m_num]; 
-
-    for(int i=0; i<m_num; i++)
+    m_current_sample_size = new unsigned long long int[m_num];
+    for(int i=0; i<m_num; i++) {
       m_min_sample_size[i]=m_max_sample_size_A;
+      m_current_sample_size[i] = m_max_sample_size_A / m_num;
+    }
     m_vec_KLS = new double[m_num];
    
   }else{
@@ -65,7 +90,11 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
     if(MCMC_only){
       delete m_rj_A[ds];
     }else{
-      delete m_rj_B[ds];
+      if (m_rj_B) {
+	delete m_rj_B[ds];
+      } else {
+	delete m_rejection_sampling[ds];
+      }
       delete_samples(ds);
       delete [] m_sample_A[ds];
     }
@@ -81,9 +110,22 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
   if(MCMC_only){
     delete [] m_rj_A;}
   else{
-    delete [] m_rj_B;}
+    if (m_rj_B) {
+      delete [] m_rj_B;
+    } else {
+      delete [] m_rejection_sampling_acceptance_rate[0];
+      delete [] m_rejection_sampling_acceptance_rate;
+      delete [] m_rejection_sampling;
+    }
+  }
+  
+  if (m_num_zero_weights) {
+    delete [] m_num_zero_weights[0];
+    delete [] m_num_zero_weights;
+  }
 
   if(m_variable_B){
+    delete [] m_current_sample_size;
     delete [] m_vec_KLS;
     delete [] m_min_sample_size;
     if(m_store_sample_sizes){
@@ -114,6 +156,20 @@ void SMC_PP_MCMC::set_RJ_parameters(int t, int b, double mw, const char *proposa
   
     }else if (strcmp(hist,proposaltype)==0){
       m_proposal_type = hist;
+    }
+  }
+}
+
+void SMC_PP_MCMC::use_spacing_prior() {
+  m_use_spacing_prior = true;
+  m_num_zero_weights = new unsigned int *[m_num];
+  m_num_zero_weights[0] = new unsigned int[m_num * m_num_of_intervals];
+  for (int i = 1; i < m_num; i++) {
+    m_num_zero_weights[i] = m_num_zero_weights[i-1] + m_num_of_intervals;
+  }
+  for (int ds = 0; ds < m_num; ds++) {
+    for (unsigned int i = 0; i < m_num_of_intervals; i++) {
+      m_num_zero_weights[ds][i] = 0;
     }
   }
 }
@@ -157,14 +213,13 @@ void SMC_PP_MCMC::store_sample_sizes(){
 
 void SMC_PP_MCMC::sample_particles(double start, double end){
   
-  long double cp_start=0;
+  long double avg_distance=0;
   //  double variance=0;
   double move_width=m_move_width;
   bool active=0;
   unsigned long long int current_number=0; 
 
   Particle<changepoint> * tempparticle;      
- 
   for(int ds=0; ds<m_num; ds++){
     if(MCMC_only==1){
       if(iters>0){
@@ -176,6 +231,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  m_pm[ds]->propose_new_parameters(tempparticle,position,3,NULL,cpobj1);
 	changepoint * cpobj = tempparticle->get_theta_component(position);
 	cpobj->setlikelihood(m_pm[ds]->log_likelihood_interval(cpobj,cpobj1));
+	cpobj->setmeanvalue(m_pm[ds]->calculate_mean(cpobj, cpobj1));
 	delete m_rj_A[ds];
 	delete cpobj1;
       }
@@ -183,7 +239,6 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	tempparticle=NULL;
       }
       m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], 100000, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,0,tempparticle,(int)(seed*iters+1+end),true);
-      
       if(m_proposal_type && m_vec_proposal_type){
 	if(strcmp(m_proposal_type,"Histogram")==0){
 	  int temp=(((unsigned int*)m_vec_proposal_type)[0])*(iters+1);
@@ -204,23 +259,28 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       m_sample_A[ds] = m_rj_A[ds]->get_sample();
       
     }else{  
+
       if(m_process_observed[ds]==0){
 	active=1;
 	m_process_observed[ds]++;
       }else{      
 	active=1;
-	delete m_rj_B[ds];
+	if (!m_do_exact_sampling) {
+	  delete m_rj_B[ds];
+	} else {
+	  delete m_rejection_sampling[ds];
+	}
 	m_process_observed[ds]++;
       }
 
       if(m_process_observed[ds]>0){
 	if(m_do_SMC_past && m_process_observed[ds]>1){
-	  cp_start=m_functionofinterest[ds]->get_average_distance();
+	  avg_distance=m_functionofinterest[ds]->get_average_distance();
 	  //  variance=m_functionofinterest[ds]->get_variance_distance();
 	}else if(m_process_observed[ds]==1){
-	    cp_start=start-m_start;
+	    avg_distance=start-m_start;
 	}else{
-	  cp_start = 0;
+	  avg_distance = 0;
 	}
 
 	unsigned long long int sample_size=0;
@@ -229,46 +289,74 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	if(!m_variable_B && m_process_observed[ds]>1){
 	  sample_size=m_max_sample_size_B;
 	}
-	m_rj_B[ds] = new rj_pp((double)(start-cp_start), (double)end, sample_size, 100000,move_width, m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,m_variable_B,NULL,(int)seed*iters+1+end,true);
-
-	if(!m_conjugate){
-	  m_rj_B[ds]->non_conjugate();
-	}
-
-	if(m_calculate_intensity){
-	  m_rj_B[ds]->calculate_intensity();
-	}
-	m_rj_B[ds]->set_start_cps(start);
 	
-	if(m_proposal_type && m_vec_proposal_type){
-	  m_rj_B[ds]->proposal_type(m_proposal_type,m_vec_proposal_type);
-	}
-
-	if(m_neighbouring_intervals){
-	  m_rj_B[ds]->allow_neighbouring_empty_intervals();
-	}else{
-	  m_rj_B[ds]->disallow_neighbouring_empty_intervals();
-	}
-
-	if(m_variable_B){
-	  m_rj_B[ds]->set_initial_iterations(m_initial_iterations);
-	  if(m_divergence_type==FOI){
-	    m_rj_B[ds]->set_function_criteria(m_foi_grid);
+	unsigned int max_theta = UINT_MAX;
+	m_cp_start = start;
+	if (m_use_spacing_prior && !m_sample_from_prior) {
+	  max_theta = 1;
+	  if (start > m_start) {
+	    m_cp_start = max(m_functionofinterest[ds]->get_min_distance() + m_spacing_prior, start);
 	  }
-	  m_rj_B[ds]->start_calculating_mc_divergence(m_divergence_type,m_loss_type,m_num_of_bins,true,(unsigned int)(m_max_sample_size_A<m_max_lookup_length?m_max_sample_size_A:m_max_lookup_length));
-	  m_rj_B[ds]->no_1d_histogram();
 	}
-	
-	m_rj_B[ds]->runsimulation();
+	if (!m_do_exact_sampling) {
+	  m_rj_B[ds] = new rj_pp((double)(start-avg_distance), (double)end, sample_size, max_theta ,move_width, m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,m_variable_B,NULL,(int)seed*iters+1+end,true);
 
-	if(m_variable_B){
-	  m_vec_KLS[ds]=m_rj_B[ds]->get_divergence();
-	  current_number+=m_initial_iterations;
-	  m_rj_B[ds]->end_divergence_burn_in();
-	  m_rj_B[ds]->set_continue_loop(1);
-	}    
-	m_sample_B[ds] = m_rj_B[ds]->get_sample();
-      }else{
+	  if(!m_conjugate){
+	    m_rj_B[ds]->non_conjugate();
+	  }
+	  if(m_calculate_intensity){
+	    m_rj_B[ds]->calculate_intensity();
+	  }
+	  m_rj_B[ds]->set_start_cps(m_cp_start);
+	  if (m_use_spacing_prior) {
+	    m_rj_B[ds]->set_spacing_prior();
+	  }
+	  if(m_proposal_type && m_vec_proposal_type){
+	    m_rj_B[ds]->proposal_type(m_proposal_type,m_vec_proposal_type);
+	  }
+	  if(m_neighbouring_intervals){
+	    m_rj_B[ds]->allow_neighbouring_empty_intervals();
+	  }else{
+	    m_rj_B[ds]->disallow_neighbouring_empty_intervals();
+	  }
+
+	  if(m_variable_B){
+	    m_rj_B[ds]->set_initial_iterations(m_initial_iterations);
+	    if(m_divergence_type==FOI){
+	      m_rj_B[ds]->set_function_criteria(m_foi_grid);
+	    }
+	    m_rj_B[ds]->start_calculating_mc_divergence(m_divergence_type,m_loss_type,m_num_of_bins,true,(unsigned int)(m_max_sample_size_A<m_max_lookup_length?m_max_sample_size_A:m_max_lookup_length));
+	    m_rj_B[ds]->no_1d_histogram();
+	  }
+	
+	  m_rj_B[ds]->runsimulation();
+
+	  if(m_variable_B){
+	    m_vec_KLS[ds]=m_rj_B[ds]->get_divergence();
+	    current_number+=m_initial_iterations;
+	    m_rj_B[ds]->end_divergence_burn_in();
+	    m_rj_B[ds]->set_continue_loop(1);
+	  }    
+	  m_sample_B[ds] = m_rj_B[ds]->get_sample();
+	} else {
+	 
+	 
+	  m_rejection_sampling[ds] = new rejection_sampling((double)(start - avg_distance),  m_cp_start, (double) end, 
+							    sample_size, m_pm[ds], m_nu, (int) seed * iters + 1 + end,
+							    m_calculate_intensity);
+	  if (!m_sample_from_prior) {
+	    m_rejection_sampling[ds]->run_simulation();
+	    m_rejection_sampling_acceptance_rate[ds][iters] = m_rejection_sampling[ds]->m_acceptance_rate;
+	  } else {
+	    m_rejection_sampling[ds]->sample_from_prior();
+	  }
+	  m_sample_B[ds] = m_rejection_sampling[ds]->get_sample();
+	  
+	  //cerr << m_rejection_sampling[ds]->m_acceptance_rate << endl;
+	 
+	  
+	}	  
+      } else {
 	if(m_variable_B){
 	  m_vec_KLS[ds]=0;
 	}
@@ -286,15 +374,20 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       current_number+=1;
       current_max=find_max(m_vec_KLS,m_num);
     }
-  
     for(int ds=0; ds<m_num; ds++){
       if(m_process_observed[ds]==1){
+	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {
+	  increase_vector(ds);
+	}  
 	m_sample_size_A[ds]=m_rj_B[ds]->get_size_sample();
 	if(m_store_sample_sizes)
 	  m_sample_sizes[ds][iters]=m_sample_size_A[ds];
 	if(m_sample_size_A[ds]<m_min_sample_size[ds])
 	  m_min_sample_size[ds]=m_sample_size_A[ds];
       }else if(m_process_observed[ds]>1){
+	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {
+	  increase_vector(ds);
+	}
 	m_sample_size_B[ds]=m_rj_B[ds]->get_size_sample();
 	if(m_store_sample_sizes)
 	  m_sample_sizes[ds][iters]=m_sample_size_B[ds];
@@ -303,6 +396,51 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       }else
 	{m_sample_size_A[ds]=0; m_sample_size_B[ds]=0;}
     }
+  }
+}
+
+void SMC_PP_MCMC::increase_vector(int ds) {
+  unsigned long long int size = m_current_sample_size[ds] * 2;
+  unsigned long long int j;
+  m_current_sample_size[ds] = size;
+  if (m_process_observed[ds] > 1) {
+    for (j = 0; j < m_sample_size_A[ds]; j++) {
+      m_sample_dummy[ds][j] = m_sample_A[ds][j];
+    }
+  }
+  delete [] m_sample_A[ds];
+  m_sample_A[ds] = new Particle <changepoint> *[size];
+  
+  if (m_process_observed[ds] > 1) {
+    for (j = 0; j < m_sample_size_A[ds]; j++) {
+      m_sample_A[ds][j] = m_sample_dummy[ds][j];
+    }
+  }
+   
+  delete [] m_sample_dummy[ds];
+  m_sample_dummy[ds] = new Particle <changepoint> *[size];
+  delete [] m_exp_weights[ds];
+  delete [] m_cum_exp_weights[ds];
+  m_exp_weights[ds] = new double[size];
+  m_cum_exp_weights[ds] = new double[size];
+  for (j = 0; j < size; j++) {
+    m_exp_weights[ds][j] = 1;
+  }
+  double *weightstemp = NULL;
+  if (m_process_observed[ds] > 1) {
+    weightstemp = new double[m_sample_size_A[ds]];
+    for (unsigned int i = 0; i < m_sample_size_A[ds]; i++) {
+      weightstemp[i] = m_weights[ds][i];
+    }
+  }
+  delete [] m_weights[ds];
+  m_weights[ds] = new double[size];
+
+  if (m_process_observed[ds] > 1) {
+    for (unsigned int i = 0; i < m_sample_size_A[ds]; i++) {
+      m_weights[ds][i] = weightstemp[i];
+    }
+    delete [] weightstemp;
   }
 }
 
@@ -339,7 +477,7 @@ void SMC_PP_MCMC::resample_particles(double start, double end, int num, const ch
         rj_pp_obj->set_initial_sample(m_sample_A[ds][i]);
        	rj_pp_obj->runsimulation();
     }
-
+    
     rj_pp_obj->set_initial_sample(m_sample_A[ds][0]);
     rj_pp_obj->runsimulation();
     m_sample_A[ds][0] = new Particle<changepoint>(rj_pp_obj->get_current_particle(),NULL);
@@ -441,7 +579,7 @@ void SMC_PP_MCMC::increase_A_particles(int ds, unsigned long long int size_incre
 	    ++iter;
 	}
 	if(iter==delta.begin()){
-	  cerr<<"fuck another duck"<<endl;
+	  cerr<<"SMC_PP_MCMC_nc: problem"<<endl;
 	  exit(1);
 	}
 	delta.insert(iter,p);
@@ -490,13 +628,19 @@ void SMC_PP_MCMC::increase_A_particles(int ds, unsigned long long int size_incre
    
 
 void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
-
   if (m_process_observed[ds]==1){
     for(unsigned int i=0; i<m_sample_size_A[ds]; i++){
-      m_weights[ds][i]=0;    
-      m_sum_exp_weights[ds]=(double)(m_sample_size_A[ds]);
-      m_sum_squared_exp_weights[ds]=(double)(m_sample_size_A[ds]);
-      m_sample_dummy[ds][i] = new Particle<changepoint>(m_sample_B[ds][i],NULL);
+	m_weights[ds][i]=0; 
+	m_sum_exp_weights[ds]=(double)(m_sample_size_A[ds]);
+	m_sum_squared_exp_weights[ds]=(double)(m_sample_size_A[ds]);
+	m_sample_dummy[ds][i] = new Particle<changepoint>(m_sample_B[ds][i],NULL);
+	if (m_sample_from_prior) {
+	  m_weights[ds][i] += m_sample_dummy[ds][i]->get_theta_component(-1)->getlikelihood();
+	  for (unsigned int j = 0; j < m_sample_dummy[ds][i]->get_dim_theta(); j++) {
+	    m_weights[ds][i] += m_sample_dummy[ds][i]->get_theta_component(j)->getlikelihood();
+	  }
+	  
+	}
     }
     m_nu = m_proposal_prior;
   } else if(m_process_observed[ds]>1){
@@ -511,10 +655,22 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
     unsigned long long int * m_A = new unsigned long long int[m_sample_size_A[ds]];
     unsigned long long int * m_B = new unsigned long long int[m_sample_size_B[ds]];
     long double prior_term=0;
-     
+    long double clean_prior_term = 0;
+    bool gt = 0;
+    bool weights0 = 0;
+    double start = 0;
+    if (m_use_spacing_prior) {
+      start = m_start + m_change_in_time * iter;
+      if (m_cp_start > start) {
+	gt = 1;
+	clean_prior_term = -m_nu * (m_cp_start - m_spacing_prior);
+      } else {
+	clean_prior_term = m_nu * m_spacing_prior;
+      }
+    }
     unsigned long long int ratio=m_sample_size_A[ds];
     for(unsigned int i=0; i<m_sample_size_A[ds]; i++)
-      m_A[i]=1;
+      m_A[i]=1; 
     for(unsigned int i=0; i<m_sample_size_B[ds]; i++)
       m_B[i]=1;
 
@@ -559,47 +715,78 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	dim=m_sample_A[ds][index_A]->get_dim_theta();
 	cpobjA = m_sample_A[ds][index_A]->get_theta_component(dim-1); 
 	likelihood_left = cpobjA->getlikelihood();
+	if (m_use_spacing_prior) {
+	  if (gt) {
+	    prior_term = clean_prior_term - m_nu * cpobjA->getchangepoint();
+	  } else {
+	    prior_term = clean_prior_term - m_nu * min(m_spacing_prior, start - cpobjA->getchangepoint());
+	  }
+	}
       }
 	
       if(counter_B==m_B[index_B]){
 	dim1=m_sample_B[ds][index_B]->get_dim_theta();
 	cpobjB = m_sample_B[ds][index_B]->get_theta_component(-1);//intercept
 	likelihood_right = cpobjB->getlikelihood();
-	prior_term=dim1*m_prior_diff;
-	    
+	if (!m_use_spacing_prior) {
+	  prior_term=dim1*m_prior_diff;
+	}
 	if(dim1==0){
 	  cpobjB1 = cpobjBalt;
 	}else{                
 	  cpobjB1=m_sample_B[ds][index_B]->get_theta_component(0);
+	  if (m_use_spacing_prior && 
+	      (cpobjA->getchangepoint() + m_spacing_prior > cpobjB1->getchangepoint() 
+	       || isinf(m_weights[ds][index_new]))) {
+	    weights0 = 1;
+	  }
 	}
       }
 
-      if(!m_conjugate){
-	m_pm[ds]->propose_combined_parameters(m_sample_A[ds][index_A],m_sample_B[ds][index_B],cpobjBalt,m_start+m_change_in_time*iter);
-      }
-      m_sample_dummy[ds][index_new] = new Particle<changepoint>(m_sample_A[ds][index_A],m_sample_B[ds][index_B]);
-
-      changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
+      if (!weights0) {
+	if(!m_conjugate){
+	  m_pm[ds]->propose_combined_parameters(m_sample_A[ds][index_A],m_sample_B[ds][index_B],cpobjBalt,m_start+m_change_in_time*iter);
+	}
+	
+	m_sample_dummy[ds][index_new] = new Particle<changepoint>(m_sample_A[ds][index_A],m_sample_B[ds][index_B]);
+	
+	changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
 	  
-      likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1);
+	likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1);
+	
+	cpobj_new_A->setlikelihood(likelihood_joint);
+	double mean;
+	if(m_calculate_intensity && m_conjugate){
+	  mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1);
+	  cpobj_new_A->setmeanvalue(mean);
+	}
+        
+	if (!m_sample_from_prior) {
+	  incremental_weight = likelihood_joint-likelihood_left-likelihood_right+prior_term;
+	} else {
+	  incremental_weight = likelihood_joint - likelihood_left;
+	  for (int i = 0; i < dim1; i++) {
+	    incremental_weight += m_sample_B[ds][index_B]->get_theta_component(i)->getlikelihood();
+	  }
+	}
 	  
-      cpobj_new_A->setlikelihood(likelihood_joint);
-      double mean;
-      if(m_calculate_intensity && m_conjugate){
-	mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1);
-	cpobj_new_A->setmeanvalue(mean);
+	double b;
+	if(!m_conjugate){
+	  //any prior ratios should be calculated in here
+	  b=m_pm[ds]->non_conjugate_weight_terms(m_sample_dummy[ds][index_new]);
+	  incremental_weight+=b;
+	}
+	dummy_weights[index_new]=m_weights[ds][index_A]+incremental_weight;
+      } else {
+	dummy_weights[index_new] = log(0); 
+	changepoint *cp = new changepoint(cpobjB);
+	m_sample_dummy[ds][index_new] = new Particle<changepoint>(0, NULL, cp);
+	incremental_weight = 0;
+	weights0 = 0;
+	m_num_zero_weights[ds][iter]++;
       }
-            
-      incremental_weight = likelihood_joint-likelihood_left-likelihood_right+prior_term;
-	  
-      double b;
-      if(!m_conjugate){
-	//any prior ratios should be calculated in here
-	b=m_pm[ds]->non_conjugate_weight_terms(m_sample_dummy[ds][index_new]);
-	incremental_weight+=b;
-      }
-      dummy_weights[index_new]=m_weights[ds][index_A]+incremental_weight;
-
+      
+      
       m_sample_dummy[ds][index_new]->set_log_posterior((double)m_sample_dummy[ds][index_new]->get_log_posterior() + (double)incremental_weight);
 
       if(index_new!=(ratio-1)){
@@ -643,6 +830,42 @@ void SMC_PP_MCMC::print_intensity(int ds, const char* file){
    m_functionofinterest[ds]->write_mean_to_file(file);
 }
 
+
+void SMC_PP_MCMC::print_zero_weights(int ds, const char *file) {
+  if (!m_num_zero_weights) {
+    return;
+  }
+  
+  ofstream outfile(file, ios::out);
+  if(!outfile){
+    cerr<<outfile << " could not be opened"<<endl;
+    return;
+  }
+
+  for (unsigned int i = 0; i < m_num_of_intervals; i++) {
+    outfile << m_num_zero_weights[ds][i] << endl;
+  }
+  outfile.close();
+}
+
+void SMC_PP_MCMC::print_rejection_sampling_acceptance_rates(int ds, const char *file) {
+  if (!m_rejection_sampling_acceptance_rate) {
+    return;
+  }
+  
+  ofstream outfile(file, ios::out);
+  if(!outfile){
+    cerr<<outfile << " could not be opened"<<endl;
+    return;
+  }
+
+  for (unsigned int i = 0; i < m_num_of_intervals; i++) {
+    outfile << m_rejection_sampling_acceptance_rate[ds][i] << endl;
+  }
+  outfile.close();
+}
+
+
 void SMC_PP_MCMC::print_exp(const char* file){
   ofstream outfile(file, ios::out);
   outfile<<setiosflags(ios::fixed);
@@ -663,6 +886,7 @@ void SMC_PP_MCMC::print_exp(const char* file){
   }
   outfile.close();
 }
+
 
 void SMC_PP_MCMC::print_var_exp(int ds,const char* file){
 

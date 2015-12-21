@@ -38,6 +38,7 @@ class Particle
   void set_weight( double weight ){ m_log_weight = weight; }
   long double get_weight(){ return m_log_weight; }
   unsigned int get_birth_time(){ return m_birth_time; }
+  bool does_particle_exist(T *);
 
 
  protected:
@@ -64,12 +65,8 @@ Particle<T>::Particle(int k,T ** thetaarray, T* thetaintercept, unsigned int bir
 {
   settheta(thetaarray);
 
-  if(thetaintercept!=NULL){
-    m_intercept = thetaintercept;
-  }
-  else{
-    m_intercept=NULL;
-  }
+  m_intercept = thetaintercept;
+  
   m_birth_time=birth_time;
   ++ particleCount;
 }
@@ -279,6 +276,7 @@ void Particle<T>::swap( T * const element1Ptr, T * const element2Ptr )
 template <class T>
 ostream &operator<< ( ostream &output, const Particle<T> &p)
 {
+
   output << *p.m_intercept << ' ';
   for (unsigned int i=0; i<p.m_dim_theta; i++){
     output << *p.m_theta[i] << ' ';
@@ -318,6 +316,17 @@ unsigned int Particle<T>::find_position(T * new_theta, bool bisection,  unsigned
   cerr<<"Particle = "<<*m_theta<<endl;
   
   return m_dim_theta +1;
+}
+
+template<class T>
+bool Particle<T>::does_particle_exist(T* new_theta) {
+  for (unsigned int j = 0; j < m_dim_theta; j++) {
+    if (new_theta->getchangepoint() == m_theta[j]->getchangepoint()) {
+      return true;
+    }
+  }
+  return false;
+
 }
   
 template<class T>

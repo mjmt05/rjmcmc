@@ -40,6 +40,7 @@ class ArgumentOptions{
   string m_model;
   bool m_importance_sampling;
 
+
  private:
   void usage(int status, char *);
   static struct option lopts[];

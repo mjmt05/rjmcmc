@@ -73,6 +73,12 @@ pp_model::~pp_model(){
     delete (Decay_Function*)m_pp_time_scale;
 }
 
+void pp_model::use_random_mean(int seed) {
+  m_random_mean = 1;
+  m_rng = gsl_rng_alloc(gsl_rng_taus);
+  gsl_rng_set(m_rng, seed);
+}
+
 void pp_model::construct(){
   m_likelihood_term_zero = m_alpha*log(m_beta);
   m_likelihood_term = m_likelihood_term_zero-gsl_sf_lngamma(m_alpha);
@@ -81,6 +87,7 @@ void pp_model::construct(){
   m_poisson_regression = false;
   m_cum_intensity_multipliers = NULL;
   m_shot_noise_rate = 0.0;
+  m_random_mean = 0;
 }
 
 void pp_model::poisson_regression_construct(){
@@ -192,8 +199,12 @@ void pp_model::calculate_posterior_mean_parameters(changepoint *obj1, changepoin
 }
 
 double pp_model::calculate_mean(changepoint *obj1, changepoint *obj2){
-  calculate_posterior_mean_parameters(obj1,obj2);
-  m_mean = m_alpha_star/m_beta_star;
+  if (!m_random_mean) {
+    calculate_posterior_mean_parameters(obj1,obj2);
+    m_mean = m_alpha_star/m_beta_star;
+  } else {
+    m_mean = draw_mean_from_posterior(obj1, obj2);
+  }
   m_var = m_mean/m_beta_star;
   return m_mean;
 }

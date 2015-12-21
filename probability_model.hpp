@@ -43,6 +43,7 @@ class probability_model{
   /*return prior parameters*/
   virtual double get_alpha(){return 0;}
   virtual double get_beta(){return 0;}
+  virtual void use_random_mean(int){}
   double get_start() const {return m_start;}
   double get_end() const {return m_end;}
   double get_mean() const {return m_mean;}

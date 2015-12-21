@@ -34,9 +34,9 @@ template< class T>
   virtual double log_likelihood_ratio_death(unsigned int) = 0; 
   virtual double log_likelihood_ratio_move(T *, unsigned int) = 0;
   virtual double log_likelihood_ratio_move_parameter(int) = 0;
-  virtual double log_prior_ratio_birth() const = 0;
-  virtual double log_prior_ratio_death() const = 0;
-  virtual double log_prior_ratio_move() const = 0;
+  virtual double log_prior_ratio_birth(T *) const = 0;
+  virtual double log_prior_ratio_death(unsigned int) const = 0;
+  virtual double log_prior_ratio_move(T *, unsigned int) const = 0;
   virtual double log_prior_ratio_move_parameter() const = 0;
   virtual double log_proposal_ratio_birth(T*) const = 0;
   virtual double log_proposal_ratio_death(int) const = 0;
@@ -357,7 +357,7 @@ template<class T>
 	}
 	update_new_parameter_with_position( new_value, new_position );
 	m_log_likelihood_ratio = log_likelihood_ratio_birth(new_value, new_position);
-	m_log_prior_ratio = log_prior_ratio_birth();
+	m_log_prior_ratio = log_prior_ratio_birth(new_value);
 	if(!m_k){
 	  if(m_conjugate)
 	    m_log_proposal_ratio = (m_max_theta == 1) ? -LOG_TWO:-LOG_THREE;
@@ -388,7 +388,7 @@ template<class T>
 	new_value=copy_parameter(m_current_particle->get_theta_component(index_theta_delete-1));
       }
       m_log_likelihood_ratio = log_likelihood_ratio_death(index_theta_delete);
-      m_log_prior_ratio = log_prior_ratio_death();
+      m_log_prior_ratio = log_prior_ratio_death(index_theta_delete);
       if(m_k == 1){
 	if(m_conjugate)
 	  m_log_proposal_ratio = (m_max_theta == 1) ? LOG_TWO:LOG_THREE;
@@ -423,7 +423,7 @@ template<class T>
       	if(!m_conjugate)
 	  new_value_alt=copy_parameter(m_current_particle->get_theta_component(index_theta_move-1));
 	m_log_likelihood_ratio = log_likelihood_ratio_move(new_value, index_theta_move);
-	m_log_prior_ratio = log_prior_ratio_move();
+	m_log_prior_ratio = log_prior_ratio_move(new_value, index_theta_move);
 	m_log_proposal_ratio += log_proposal_ratio_move();
 	if(m_iters>0)
 	  m_move_attempt++;
