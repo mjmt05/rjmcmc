@@ -7,13 +7,13 @@
 
 #include <cmath>
 #include "changepoint.hpp"
-
+#include "probability_model.hpp"
 using namespace std;
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
 #include "time.h"
-
+#include "float.h"
 
 
 template<class T>
@@ -53,6 +53,7 @@ public:
   void print_sample_birth_times(int);
   void print_size_sample_A(int ds);
   void sample_from_prior() {m_sample_from_prior = true;}
+  void do_importance_sampling() {m_importance_sampling = 1;}
 
 protected:
 
@@ -92,12 +93,17 @@ protected:
     int seed;
     unsigned int m_num_ESS;
   bool  m_sample_from_prior;
+  bool m_importance_sampling;
+  double log_gamma_pdf(double, double, double);
+  probability_model ** m_pm;
 
 };
 template<class T>
 SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
 :m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),MCMC_only(doMCMC),seed(s)
 {
+
+  m_importance_sampling = 0;
   long long int sample_size = m_max_sample_size_A;
   if (varyB) {
     sample_size /= m_num;
@@ -122,7 +128,7 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
     m_sample_B=NULL;
   }
    
-  if (MCMC_only){
+  if (MCMC_only && !m_importance_sampling){
     m_weights=NULL;
     m_cum_exp_weights=NULL;
   } else {
@@ -146,6 +152,7 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
   for(unsigned long long int i=0; i<sample_size; i++){
     for(int j=0; j<m_num; j++){
       m_exp_weights[j][i]=1;
+      m_weights[j][i] = 0;
     }
   }
 
@@ -264,12 +271,11 @@ SMC_PP<T>::~SMC_PP(){
 template<class T>
 void SMC_PP<T>::store_ESS(){
   m_store_ESS=1;
-  int length = m_sample_from_prior ? m_num_of_intervals : m_num_of_intervals - 1; 
   m_ESS = new double * [m_num];
-  m_ESS[0] = new double[m_num*length];
+  m_ESS[0] = new double[m_num*m_num_of_intervals];
   
   for(int i=1; i<m_num; i++)
-    m_ESS[i]=m_ESS[i-1] + length;
+    m_ESS[i]=m_ESS[i-1] + m_num_of_intervals;
 
 }
 
@@ -297,6 +303,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
     if(i>0 && MCMC_only==0){
       permute_sample();
     }
+
     if (!MCMC_only){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){
@@ -311,14 +318,13 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
       }
     }
     for(int ds=0; ds<m_num; ds++){
-      if ((m_process_observed[ds]>1 || m_sample_from_prior) && !MCMC_only){
-      	ESS[ds]=calculate_ESS(ds);
+      if (m_importance_sampling && MCMC_only) {
+	calculate_exp_weights(ds);
+      }
+      if (!MCMC_only){
+	ESS[ds]=calculate_ESS(ds);
 	if(m_store_ESS){
-	  if (!m_sample_from_prior) {
-	    m_ESS[ds][i-1]=ESS[ds];
-	  } else {
-	    m_ESS[ds][i] = ESS[ds];
-	  }
+	  m_ESS[ds][i] = ESS[ds];
 	}
 	/*BF[ds] = log(m_sum_exp_weights[ds]) + m_max_weight[ds]-old_sum_weights[ds];
      	  if (BF[ds] < log(0.1) && ESS[ds]>m_ESS_threshold){
@@ -397,7 +403,39 @@ double SMC_PP<T>::calculate_ESS(int ds){
 }
 
 template<class T>
+double SMC_PP<T>::log_gamma_pdf(double val, double alpha, double beta) {
+  double temp = gsl_ran_gamma_pdf (val, alpha, beta);
+  if (temp <= 0 ) {
+    //cout << val << " " << alpha << " " << beta << endl;
+    temp = DBL_MIN;
+  }
+
+  return log(temp);
+}
+
+template<class T>
 void SMC_PP<T>::calculate_exp_weights(int ds){
+  double *temp_weights = NULL;
+  if (m_importance_sampling) {
+
+    double prior_parameter_1 = m_pm[ds]->get_alpha();
+    double prior_parameter_2 = m_pm[ds]->get_beta();
+    temp_weights = new double[m_max_sample_size_A];
+    for (unsigned int i = 0; i < m_max_sample_size_A; i++) {
+      temp_weights[i] = m_weights[ds][i];
+    
+      double mean = m_sample_A[ds][i]->get_theta_component(-1)->getmeanvalue();
+      double mean1;
+      m_weights[ds][i] += log_gamma_pdf(mean, 4.5, 1.0/1.5);
+      m_weights[ds][i] -= log_gamma_pdf(mean, prior_parameter_1, (double)1.0/prior_parameter_2);
+      for (unsigned int j = 0; j < m_sample_A[ds][i]->get_dim_theta(); j++) {
+	mean1 = m_sample_A[ds][i]->get_theta_component(j)->getmeanvalue();
+	m_weights[ds][i] += log_gamma_pdf(mean1, mean*mean/5.0, (double)5/mean);
+	m_weights[ds][i] -= log_gamma_pdf(mean1, prior_parameter_1, (double)1.0/prior_parameter_2);
+	mean = mean1;
+      }
+    }
+  }
   m_sum_exp_weights[ds]=0;
   m_max_weight[ds]=m_weights[ds][find_max(m_weights[ds],m_sample_size_A[ds])];
 
@@ -408,8 +446,15 @@ void SMC_PP<T>::calculate_exp_weights(int ds){
       m_exp_weights[ds][i]=exp(m_weights[ds][i]-m_max_weight[ds]);
     }
     m_sum_exp_weights[ds]+=m_exp_weights[ds][i];
-
+    
     m_cum_exp_weights[ds][i]=m_sum_exp_weights[ds];
+  }
+
+  if (m_importance_sampling) {
+    for (unsigned int i = 0; i < m_max_sample_size_A; i++) {
+      m_weights[ds][i] = temp_weights[i];
+    }
+    delete [] temp_weights;
   }
 }
 
@@ -542,8 +587,7 @@ void SMC_PP<T>::print_ESS(int ds, const char * file){
     return;
     //exit(1);
   }
-  int length = m_sample_from_prior ? m_num_of_intervals : m_num_of_intervals - 1; 
-  for(unsigned int i=0; i<length; i++){
+  for(unsigned int i=0; i<m_num_of_intervals; i++){
     outfile<<m_ESS[ds][i]<<' ';
   }
   outfile<<endl;

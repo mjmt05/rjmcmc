@@ -50,10 +50,11 @@ public:
     void use_spacing_prior();
     void print_zero_weights(int, const char *);
     void print_rejection_sampling_acceptance_rates(int, const char *);
-    
+  void sample_intensities(Particle<changepoint> **, double, unsigned int, int);
+  
 
 private:
-        probability_model ** m_pm;
+       
         rj_pp ** m_rj_B;
         rejection_sampling ** m_rejection_sampling;
         rj_pp ** m_rj_A;
@@ -76,7 +77,7 @@ private:
        //parameter for enforced spacing when doing rejection sampling;
         double m_spacing_prior;
         double m_cp_start;
-
+        
 	//RJ parameters when sampling on the intervals
 	int m_thin;
 	double m_move_width;
@@ -93,6 +94,7 @@ private:
         double **m_rejection_sampling_acceptance_rate;
         unsigned int **m_num_zero_weights;
        
+ 
         void increase_vector(int);
 	static bool MyDataSort(const pair<double,int>&, const pair<double,int>&);
 

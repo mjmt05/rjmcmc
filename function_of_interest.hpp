@@ -28,7 +28,6 @@ class Function_of_Interest{
   void reset_prob();
   void set_start(int st){m_start_of_sample = st;}
   void write_mean_to_file(const string output_filename = "intensity.txt");
-  void set_importance_sampling(){m_coal_importance_sampling = 1;}
 
   private:
 
@@ -61,8 +60,6 @@ class Function_of_Interest{
    int m_start_of_sample;
    int m_sample_size;
    
-   //do importance sampling to compare with Del Moral as in the smc paper
-   bool m_coal_importance_sampling;
 
 };
 

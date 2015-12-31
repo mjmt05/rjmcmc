@@ -44,6 +44,7 @@ class probability_model{
   virtual double get_alpha(){return 0;}
   virtual double get_beta(){return 0;}
   virtual void use_random_mean(int){}
+  virtual void use_prior_mean(){}
   double get_start() const {return m_start;}
   double get_end() const {return m_end;}
   double get_mean() const {return m_mean;}
@@ -65,6 +66,7 @@ class probability_model{
   virtual double log_likelihood_changepoints( unsigned int process, vector<unsigned long long int>& regime_changepoints_data_indices, vector<double>& regime_changepoints_changepoint_positions ) { return 0; }
   virtual double log_likelihood_changepoints( vector<unsigned long long int>& regime_changepoints_data_indices, vector<double>& regime_changepoints_changepoint_positions ) { return 0; }
   void sample_segment_means(Particle<changepoint>*);
+  bool m_random_mean;
 
  protected:
   double m_mean;

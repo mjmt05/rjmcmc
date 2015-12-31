@@ -619,7 +619,6 @@ void rj_pp::update_likelihood_move(changepoint * new_theta, int position, double
     cpobj_left->setlikelihood(like_new);
 
     if (m_calculate_mean && m_conjugate){
-
         double mean = m_pm->calculate_mean(cpobj_left, new_theta);
         cpobj_left->setmeanvalue(mean);
         cpobj_left->setvarvalue(m_pm->get_var());
@@ -654,7 +653,7 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
       m_current_particle -> set_log_posterior(likelihood+prior);
 
       if (m_calculate_mean && m_conjugate){
-	
+
         double mean = m_pm->calculate_mean(cpobj, cpobj_temp);
         cpobj->setmeanvalue(mean);
         cpobj->setvarvalue(m_pm->get_var());

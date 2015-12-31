@@ -5,7 +5,7 @@ Function_of_Interest::Function_of_Interest(int grid,double start, double end, do
 :m_grid(grid),m_start(start),m_end(end),m_prior(prior_term),m_calculate_g(g),m_calculate_prob(prob),m_calculate_intensity(intensity),m_online(online),m_update(sequential),m_instantaneous(instant),m_delta(delta)
 {
 
-  m_coal_importance_sampling=0;
+
    m_prior_expectation_function_of_interest=NULL;
    m_prior_sd_function_of_interest=NULL;
    m_exp_last_changepoint_sequential=NULL;
@@ -221,9 +221,9 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
     begin=m_start; 
   else
     begin=interval_begin;
-
-
-  if(m_coal_importance_sampling && !m_fixed){
+  
+  //  cout << sum_weights << endl;
+  /*if(m_coal_importance_sampling && !m_fixed){
     Particle<changepoint> * temp;
     long double temp_weight;
     sum_weights=0;
@@ -235,18 +235,19 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
       double intep=(temp->get_theta_component(-1))->getmeanvalue(); 	 
       temp_weight+=log(gsl_ran_gamma_pdf (intep, 4.5, (double)1.0/1.5));
       temp_weight-=log(gsl_ran_gamma_pdf (intep, prior_parameter_1, (double)1.0/prior_parameter_2));
-
+      double inte;
       for(unsigned int i=0; i<temp->get_dim_theta(); i++){
-	double inte=(temp->get_theta_component(i))->getmeanvalue();
+	inte=(temp->get_theta_component(i))->getmeanvalue();
 	intep=(temp->get_theta_component(i-1))->getmeanvalue();
-	temp_weight+=log(gsl_ran_gamma_pdf (inte, intep*intep/5, (double)5/intep));
+	temp_weight+=log(gsl_ran_gamma_pdf (inte, intep*intep/5.0, (double)5/intep));
 	temp_weight-=log(gsl_ran_gamma_pdf (inte, prior_parameter_1, (double)1.0/prior_parameter_2));
       }
+      
       weights[j]*=exp(temp_weight);
       sum_weights+=weights[j];
     }
-  }
-  
+    }*/
+
   if (create_weights){
     weights=new double[sample_size];
     for(int i=0; i< sample_size; i++)
@@ -406,7 +407,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
   if(normalise){
     normalise_function(sum_weights,loc_index_1,loc_index_2,fb,iters);
   }
- 
+
   if(create_weights){
     delete [] weights; 
   } 

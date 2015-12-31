@@ -21,15 +21,8 @@ int main(int argc, char *argv[])
 
 
   probability_model * ppptr = NULL;
-  if(o.m_model == "poisson"){
-    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
-    if (o.m_importance_sampling) {
-      ppptr->use_random_mean(o.m_seed);
-    }
-  }else{
-    ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
-  }
-
+  
+  cout << o.m_seed << endl;
 
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool dovariable = 0; //for doing a variable sample size approach
@@ -38,6 +31,20 @@ int main(int argc, char *argv[])
   bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = false;
   bool sample_from_prior = false;
+
+  if(o.m_model == "poisson"){
+    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+    if (o.m_importance_sampling) {
+      ppptr->use_random_mean(o.m_seed);
+    }
+    if (sample_from_prior) {
+      ppptr->use_prior_mean();
+    }
+  }else{
+    ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
+  }
+
+
   if (o.m_model == "sncp") {
     o.m_rejection_sampling = false;
     o.m_spacing_prior = false;
@@ -74,8 +81,9 @@ int main(int argc, char *argv[])
   }
 
   if(o.m_importance_sampling && o.m_model != "sncp"){
-    Function_of_Interest * foi = SMCobj.get_function_of_interest(0);
-    foi->set_importance_sampling();
+    //Function_of_Interest * foi = SMCobj.get_function_of_interest(0);
+    //foi->set_importance_sampling();
+    SMCobj.do_importance_sampling();
   }
 
   if(o.m_model == "sncp"){

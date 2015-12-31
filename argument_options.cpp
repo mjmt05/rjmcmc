@@ -30,7 +30,8 @@ ArgumentOptions::ArgumentOptions(){
   m_cp_prior = 2/(double)112;
   m_gamma_prior_1 = 0.1;
   m_gamma_prior_2 = 0.1;
-  m_seed = time(NULL);
+  srand (time(NULL));
+  m_seed = rand() % 10000;
   m_calculate_posterior_mean = 1;
   m_grid = 0;
   m_disallow_empty_intervals_between_cps = 0;

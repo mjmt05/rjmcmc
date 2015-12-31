@@ -88,6 +88,7 @@ void pp_model::construct(){
   m_cum_intensity_multipliers = NULL;
   m_shot_noise_rate = 0.0;
   m_random_mean = 0;
+  m_posterior_mean = 1;
 }
 
 void pp_model::poisson_regression_construct(){
@@ -174,6 +175,7 @@ void pp_model::calculate_posterior_mean_parameters(changepoint *obj1, changepoin
   unsigned long long int i1 = obj1->getdataindex();
   unsigned long long int i2 = obj2->getdataindex();
   if (i2<i1){
+    cerr << obj1->getchangepoint() << " " << obj2->getchangepoint() << " " << i1 << " " << i2 <<endl;
     cerr<<"Poisson_process_model.h: number of datapoints can not be less than 0"<<endl;
     exit(1);
   }
@@ -209,7 +211,12 @@ double pp_model::calculate_mean(changepoint *obj1, changepoint *obj2){
   return m_mean;
 }
 
+
 double pp_model::draw_mean_from_posterior(changepoint *obj1, changepoint *obj2){
+
+  if(!m_posterior_mean) {
+    return gsl_ran_gamma(m_rng,m_alpha,1.0/m_beta);
+  }
    calculate_posterior_mean_parameters(obj1,obj2);
    if(!m_rng){
       m_rng = gsl_rng_alloc(gsl_rng_taus);
