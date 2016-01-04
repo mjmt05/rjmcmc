@@ -578,6 +578,7 @@ template<class T>
 	  calculate_importance_weight();
 	else
 	  m_current_log_importance_weight=-DBL_MAX;
+	cout << m_current_log_importance_weight << endl;
         m_current_particle->set_weight(m_current_log_importance_weight);
         m_current_importance_weight = exp(m_current_log_importance_weight);
       }

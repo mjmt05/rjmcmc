@@ -240,6 +240,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
     for(int j=0; j<sample_size; j++){
       temp=sample[j];
       temp_weight=0;
+      pm->set_prior_parameters(NULL,temp->get_theta_component(-1));
       double prior_parameter_1 = pm->get_alpha();
       double prior_parameter_2 = pm->get_beta();
       double intep=(temp->get_theta_component(-1))->getmeanvalue(); 	 
@@ -247,6 +248,9 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
       temp_weight-=log_gamma_pdf (intep, prior_parameter_1, (double)1.0/prior_parameter_2);
       double inte;
       for(unsigned int i=0; i<temp->get_dim_theta(); i++){
+	pm->set_prior_parameters(temp->get_theta_component(i-1),temp->get_theta_component(i));
+	prior_parameter_1 = pm->get_alpha();
+	prior_parameter_2 = pm->get_beta();
 	inte=(temp->get_theta_component(i))->getmeanvalue();
 	intep=(temp->get_theta_component(i-1))->getmeanvalue();
 	temp_weight+=log_gamma_pdf (inte, intep*intep/5.0, (double)5/intep);

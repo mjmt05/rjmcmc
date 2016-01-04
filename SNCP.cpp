@@ -24,7 +24,7 @@ sncp_model::~sncp_model(){
 
 }
 
-double sncp_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2){
+double sncp_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint *ojbl1){
 
   
   unsigned long long int i1 = obj1->getdataindex();

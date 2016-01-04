@@ -238,8 +238,8 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	if(!m_conjugate)
 	  m_pm[ds]->propose_new_parameters(tempparticle,position,3,NULL,cpobj1);
 	changepoint * cpobj = tempparticle->get_theta_component(position);
-	cpobj->setlikelihood(m_pm[ds]->log_likelihood_interval(cpobj,cpobj1));
-	cpobj->setmeanvalue(m_pm[ds]->calculate_mean(cpobj, cpobj1));
+	cpobj->setlikelihood(m_pm[ds]->log_likelihood_interval(cpobj,cpobj1,position>=0?tempparticle->get_theta_component(position):NULL));
+	cpobj->setmeanvalue(m_pm[ds]->calculate_mean(cpobj, cpobj1,position>=0?tempparticle->get_theta_component(position):NULL));
 	delete m_rj_A[ds];
 	delete cpobj1;
       }
@@ -416,17 +416,20 @@ void SMC_PP_MCMC::sample_intensities(Particle<changepoint> ** sample, double end
   int dim;
   changepoint *cp;
   changepoint *cp1;
+  changepoint *cp0;
   changepoint *end_of_int_changepoint = new changepoint(end, 0, 0, 0);
   m_pm[ds]->set_data_index(end_of_int_changepoint);
   for (unsigned int i = 0; i < sample_size; i++) {
     dim = sample[i]->get_dim_theta();
     cp = sample[i]->get_theta_component(-1);
+    cp0 = NULL;
     for (int j = 0; j < dim; j++) {
       cp1 = sample[i]->get_theta_component(j);
-      cp->setmeanvalue(m_pm[ds]->calculate_mean(cp, cp1));
+      cp->setmeanvalue(m_pm[ds]->calculate_mean(cp, cp1, cp0));
+      cp0 = cp;
       cp = cp1;
     }
-    cp->setmeanvalue(m_pm[ds]->calculate_mean(cp, end_of_int_changepoint));
+    cp->setmeanvalue(m_pm[ds]->calculate_mean(cp, end_of_int_changepoint,cp0));
   }
 }
 
@@ -784,12 +787,12 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	
 	changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
 	
-	likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1);
+	likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
 	
 	cpobj_new_A->setlikelihood(likelihood_joint);
 	double mean;
 	if(m_calculate_intensity && m_conjugate){
-	  mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1);
+	  mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
 	  cpobj_new_A->setmeanvalue(mean);
 	}
         
