@@ -180,8 +180,14 @@ void SMC_PP_MCMC::initialise_function_of_interest(int grid, bool g, bool prob, b
 
   m_length_grid=grid;
   m_functionofinterest = new Function_of_Interest * [m_num];
-  for(int ds=0; ds<m_num; ds++)
+  for(int ds=0; ds<m_num; ds++){
     m_functionofinterest[ds] = new Function_of_Interest(m_length_grid,m_start,m_end,m_nu,g,prob,m_calculate_intensity,1,sequential,m_num_of_intervals,instant,delta);
+    
+    if (m_importance_sampling) {
+      m_functionofinterest[ds]->set_importance_sampling();
+    }
+  }
+    
 }
 
 void SMC_PP_MCMC::delete_samples(int ds){
@@ -240,7 +246,6 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       else{
 	tempparticle=NULL;
       }
-     
       m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], 100000, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,0,tempparticle,(int)(seed*(iters+1)),true);
       if(m_proposal_type && m_vec_proposal_type){
 	if(strcmp(m_proposal_type,"Histogram")==0){
@@ -263,7 +268,6 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       if (m_importance_sampling) {
 	sample_intensities(m_sample_A[ds], end, m_sample_size_A[ds], ds);
       }
-      
     }else{  
 
       if(m_process_observed[ds]==0){

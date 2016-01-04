@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
   probability_model * ppptr = NULL;
   
-  cout << o.m_seed << endl;
+  cout << "seed " << o.m_seed << endl;
 
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool dovariable = 0; //for doing a variable sample size approach
@@ -72,6 +72,10 @@ int main(int argc, char *argv[])
     SMCobj.sample_from_prior();
   }
 
+  if(o.m_importance_sampling && o.m_model != "sncp"){
+    SMCobj.do_importance_sampling();
+  }
+
   if(o.m_calculate_filtering_mean){
     SMCobj.initialise_function_of_interest(o.m_grid,0,0);
   }
@@ -80,11 +84,6 @@ int main(int argc, char *argv[])
     SMCobj.set_neighbouring_intervals(1);
   }
 
-  if(o.m_importance_sampling && o.m_model != "sncp"){
-    //Function_of_Interest * foi = SMCobj.get_function_of_interest(0);
-    //foi->set_importance_sampling();
-    SMCobj.do_importance_sampling();
-  }
 
   if(o.m_model == "sncp"){
     SMCobj.non_conjugate();

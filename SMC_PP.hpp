@@ -128,19 +128,6 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
     m_sample_B=NULL;
   }
    
-  if (MCMC_only && !m_importance_sampling){
-    m_weights=NULL;
-    m_cum_exp_weights=NULL;
-  } else {
-    m_weights = new double *[m_num];
-    m_cum_exp_weights = new double *[m_num];
-    
-    for (int i = 0; i < m_num; i++) {
-      m_weights[i] = new double[sample_size];
-      m_cum_exp_weights[i] = new double[sample_size];
-    }
-  }
- 
   m_exp_weights = new double * [m_num];
   for (int i = 0; i < m_num; i++) {
     m_exp_weights[i] = new double[sample_size];
@@ -152,10 +139,29 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
   for(unsigned long long int i=0; i<sample_size; i++){
     for(int j=0; j<m_num; j++){
       m_exp_weights[j][i]=1;
-      m_weights[j][i] = 0;
     }
   }
 
+
+  if (MCMC_only){
+    m_weights=NULL;
+    m_cum_exp_weights=NULL;
+  } else {
+    m_weights = new double *[m_num];
+    m_cum_exp_weights = new double *[m_num];
+    
+    for (int i = 0; i < m_num; i++) {
+      m_weights[i] = new double[sample_size];
+      m_cum_exp_weights[i] = new double[sample_size];
+    }
+    
+    for(unsigned long long int i=0; i<sample_size; i++){
+      for(int j=0; j<m_num; j++){
+	m_weights[j][i] = 0;
+      }
+    }
+  }
+ 
   m_process_observed = new int[m_num];
   if(!MCMC_only){
     for(int i=0; i<m_num; i++)
@@ -318,9 +324,6 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
       }
     }
     for(int ds=0; ds<m_num; ds++){
-      if (m_importance_sampling && MCMC_only) {
-	calculate_exp_weights(ds);
-      }
       if (!MCMC_only){
 	ESS[ds]=calculate_ESS(ds);
 	if(m_store_ESS){
@@ -402,40 +405,11 @@ double SMC_PP<T>::calculate_ESS(int ds){
     return(effectivess);
 }
 
-template<class T>
-double SMC_PP<T>::log_gamma_pdf(double val, double alpha, double beta) {
-  double temp = gsl_ran_gamma_pdf (val, alpha, beta);
-  if (temp <= 0 ) {
-    //cout << val << " " << alpha << " " << beta << endl;
-    temp = DBL_MIN;
-  }
 
-  return log(temp);
-}
 
 template<class T>
 void SMC_PP<T>::calculate_exp_weights(int ds){
-  double *temp_weights = NULL;
-  if (m_importance_sampling) {
 
-    double prior_parameter_1 = m_pm[ds]->get_alpha();
-    double prior_parameter_2 = m_pm[ds]->get_beta();
-    temp_weights = new double[m_max_sample_size_A];
-    for (unsigned int i = 0; i < m_max_sample_size_A; i++) {
-      temp_weights[i] = m_weights[ds][i];
-    
-      double mean = m_sample_A[ds][i]->get_theta_component(-1)->getmeanvalue();
-      double mean1;
-      m_weights[ds][i] += log_gamma_pdf(mean, 4.5, 1.0/1.5);
-      m_weights[ds][i] -= log_gamma_pdf(mean, prior_parameter_1, (double)1.0/prior_parameter_2);
-      for (unsigned int j = 0; j < m_sample_A[ds][i]->get_dim_theta(); j++) {
-	mean1 = m_sample_A[ds][i]->get_theta_component(j)->getmeanvalue();
-	m_weights[ds][i] += log_gamma_pdf(mean1, mean*mean/5.0, (double)5/mean);
-	m_weights[ds][i] -= log_gamma_pdf(mean1, prior_parameter_1, (double)1.0/prior_parameter_2);
-	mean = mean1;
-      }
-    }
-  }
   m_sum_exp_weights[ds]=0;
   m_max_weight[ds]=m_weights[ds][find_max(m_weights[ds],m_sample_size_A[ds])];
 
@@ -448,13 +422,6 @@ void SMC_PP<T>::calculate_exp_weights(int ds){
     m_sum_exp_weights[ds]+=m_exp_weights[ds][i];
     
     m_cum_exp_weights[ds][i]=m_sum_exp_weights[ds];
-  }
-
-  if (m_importance_sampling) {
-    for (unsigned int i = 0; i < m_max_sample_size_A; i++) {
-      m_weights[ds][i] = temp_weights[i];
-    }
-    delete [] temp_weights;
   }
 }
 

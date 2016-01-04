@@ -28,7 +28,7 @@ class Function_of_Interest{
   void reset_prob();
   void set_start(int st){m_start_of_sample = st;}
   void write_mean_to_file(const string output_filename = "intensity.txt");
-
+  void set_importance_sampling() {m_coal_importance_sampling = 1;}
   private:
 
    int m_grid;
@@ -59,6 +59,8 @@ class Function_of_Interest{
    double m_variance_distance;
    int m_start_of_sample;
    int m_sample_size;
+  bool m_coal_importance_sampling;
+  double log_gamma_pdf(double, double, double);
    
 
 };
