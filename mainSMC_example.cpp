@@ -30,16 +30,17 @@ int main(int argc, char *argv[])
   unsigned int number_of_data_processes = 1;
   bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = false;
-  bool sample_from_prior = false;
+  bool sample_from_prior = true;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
     if (o.m_importance_sampling) {
       ppptr->use_random_mean(o.m_seed);
+      /*if (sample_from_prior) {
+	ppptr->use_prior_mean();
+`	}*/
     }
-    if (sample_from_prior) {
-      ppptr->use_prior_mean();
-    }
+   
   }else{
     ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
   }
@@ -68,9 +69,7 @@ int main(int argc, char *argv[])
     SMCobj.use_spacing_prior();
   }
 
-  if (sample_from_prior) {
-    SMCobj.sample_from_prior();
-  }
+
 
   if(o.m_importance_sampling && o.m_model != "sncp"){
     SMCobj.do_importance_sampling();
@@ -78,6 +77,10 @@ int main(int argc, char *argv[])
 
   if(o.m_calculate_filtering_mean){
     SMCobj.initialise_function_of_interest(o.m_grid,0,0);
+  }
+
+  if (sample_from_prior) {
+    SMCobj.sample_from_prior();
   }
 
   if(!(o.m_disallow_empty_intervals_between_cps || o.m_model == "sncp")){

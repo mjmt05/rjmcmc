@@ -5,7 +5,7 @@ Function_of_Interest::Function_of_Interest(int grid,double start, double end, do
 :m_grid(grid),m_start(start),m_end(end),m_prior(prior_term),m_calculate_g(g),m_calculate_prob(prob),m_calculate_intensity(intensity),m_online(online),m_update(sequential),m_instantaneous(instant),m_delta(delta)
 {
 
-
+  m_coal_importance_sampling = 0;
    m_prior_expectation_function_of_interest=NULL;
    m_prior_sd_function_of_interest=NULL;
    m_exp_last_changepoint_sequential=NULL;

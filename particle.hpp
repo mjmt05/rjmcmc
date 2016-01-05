@@ -313,7 +313,10 @@ unsigned int Particle<T>::find_position(T * new_theta, bool bisection,  unsigned
   /*a location for new_theta could not be found*/
   cerr<<"Particle.h: a location for the new object in the particle could not be found " << endl;
   cerr<<"New object = "<<*new_theta<<endl;
-  cerr<<"Particle = "<<*m_theta<<endl;
+  for (unsigned int j =0; j < m_dim_theta; j++) {
+    cerr<<"Particle = "<<*m_theta[j]<<" ";
+  }
+  cerr << endl;
   
   return m_dim_theta +1;
 }
