@@ -1,5 +1,5 @@
 #ifndef REJECTION_SAMPLING_HPP
-#define RJECTION_SAMPLING_HPP
+#define REJECTION_SAMPLING_HPP
 
 #include "particle.hpp"
 #include "changepoint.hpp"

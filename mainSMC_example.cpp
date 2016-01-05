@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+    //static_cast<pp_model*>(ppptr)->use_alternative_gamma_prior();
     if (o.m_importance_sampling) {
       ppptr->use_random_mean(o.m_seed);
       /*if (sample_from_prior) {

@@ -18,11 +18,12 @@ class pp_model : public probability_model{
   void construct();
   void poisson_regression_construct();
   void construct_empirical_prior();
-
-   virtual double log_likelihood_interval(changepoint *, changepoint *);
+  void use_alternative_gamma_prior(){m_alternative_gamma_prior=true;}
+  virtual void set_prior_parameters(changepoint *, changepoint*);
+   virtual double log_likelihood_interval(changepoint *, changepoint *, changepoint * = NULL);
    virtual double log_likelihood_interval(double t1, double t2);
-   virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *);
-   virtual double draw_mean_from_posterior(changepoint *, changepoint *);
+   virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *, changepoint * = NULL);
+   virtual double draw_mean_from_posterior(changepoint *, changepoint *, changepoint * = NULL);
    virtual double calculate_log_predictive_df(double t1, double t2, double t3, bool lower_tail = true );
    virtual void calculate_sequential_log_predictive_dfs(double start, double end, double increment, bool lower_tail = true, bool two_sided = false, double control_chart_weight = 0.05, string* filename_ptr = NULL, vector<double>* dfs = NULL );
    virtual void set_parameters_to_current_t();
@@ -36,7 +37,7 @@ class pp_model : public probability_model{
    double log_likelihood_length_and_count(double t, unsigned long long int r);
    double log_likelihood_length_and_count(){ return log_likelihood_length_and_count(m_t,m_r); }
    double poisson_regression_log_likelihood_interval(unsigned long long int i1, unsigned long long int i2);
-   double calculate_mean(changepoint *, changepoint *);
+   double calculate_mean(changepoint *, changepoint *, changepoint * = NULL);
    double calculate_log_posterior_predictive_pdf( double t, unsigned long long int r );
    double calculate_log_posterior_predictive_df( double t, unsigned long long int r, bool lower_tail = true );//posterior predictive distribution function for a future count of r in t units of time, given the current posterior parameters m_alpha_star, m_beta_star.
    double calculate_waiting_times_log_predictive_df( double increment, bool lower_tail, bool two_sided, bool increment_parameters );
@@ -56,6 +57,8 @@ class pp_model : public probability_model{
     Data<unsigned long long int>* m_cum_counts;//for Poisson regression.
     double m_alpha; //lambda shape parameter,can't be zero
     double m_beta;//lambda scale parameter, can't be zero
+    bool m_alternative_gamma_prior;
+    double m_chi;//variance for alternative gamma prior
     double* m_cum_intensity_multipliers;//fixed mulitpliers for the intensity in Poisson regression.
     Univariate_Function* m_pp_time_scale;
     double m_shot_noise_rate;

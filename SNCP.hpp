@@ -17,8 +17,8 @@ public:
   sncp_model(double, double, Data<double> *, int=1);
   ~sncp_model();
 
- virtual double log_likelihood_interval(changepoint *, changepoint *);
- virtual double calculate_mean(changepoint *, changepoint *){return 0;}
+ virtual double log_likelihood_interval(changepoint *, changepoint *, changepoint * = NULL);
+ virtual double calculate_mean(changepoint *, changepoint *, changepoint * = NULL){return 0;}
  virtual void propose_new_parameters(Particle<changepoint>*, int, unsigned int, changepoint *, changepoint *);
  virtual double calculate_prior_ratio(Particle<changepoint>*,unsigned int){return(m_prior_ratio);}
  double gamma_distribution_calculations(changepoint *, changepoint *, changepoint *,changepoint * =NULL, bool=1);

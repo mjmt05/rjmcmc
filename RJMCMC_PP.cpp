@@ -226,7 +226,7 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
     }
 
 
-    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_value, cpobj_right);
+    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_value, cpobj_right, cpobj_left);
     
     new_value -> setlikelihood(likelihood_contribution_right);
 
@@ -237,7 +237,7 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
         new_value->setvarvalue(m_pm->get_var());
     }
 
-    double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,new_value);
+    double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,new_value,position>0?m_current_particle->get_theta_component(position-2):NULL);
     double old_likelihood = cpobj_left->getlikelihood();
     double log_likelihood_ratio = likelihood_contribution_right + likelihood_contribution_left - old_likelihood;
 
@@ -262,7 +262,7 @@ double rj_pp::log_likelihood_ratio_death(unsigned int index_theta_delete ){
     }
 
     changepoint *cpobj = m_current_particle->get_theta_component(index_theta_delete);
-    double likelihood_contribution = m_pm->log_likelihood_interval(cpobj_left,cpobj_right);
+    double likelihood_contribution = m_pm->log_likelihood_interval(cpobj_left,cpobj_right,index_theta_delete>0?m_current_particle->get_theta_component(index_theta_delete-2):NULL);
     double old_likelihood = cpobj_left->getlikelihood()+cpobj->getlikelihood();
     double log_likelihood_ratio = likelihood_contribution - old_likelihood;
 
@@ -390,7 +390,7 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
 
       }*/
 
-    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_theta, cpobj_right);
+    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_theta, cpobj_right, cpobj_left);
     new_theta->setlikelihood(likelihood_contribution_right);
 
     if (m_calculate_mean && m_conjugate){
@@ -399,7 +399,7 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
         new_theta->setvarvalue(m_pm->get_var());
     }
 
-    double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,new_theta);
+    double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,new_theta,k>0?m_current_particle->get_theta_component(k-2):NULL);
     double old_likelihood = cpobj_left->getlikelihood()+cpobj_move->getlikelihood();
     double log_likelihood_ratio = likelihood_contribution_right+likelihood_contribution_left-old_likelihood;
 
@@ -421,7 +421,7 @@ double rj_pp::log_likelihood_ratio_move_parameter(int k) {
   }
 
   double likelihood_contribution_old = cpobj_move->getlikelihood();
-  double likelihood_contribution_new = m_pm->log_likelihood_interval(cpobj_move, cpobj_right);
+  double likelihood_contribution_new = m_pm->log_likelihood_interval(cpobj_move, cpobj_right, m_current_particle->get_theta_component(k-1));
   double log_likelihood_ratio = likelihood_contribution_new-likelihood_contribution_old;
 
   return(log_likelihood_ratio);
@@ -888,8 +888,8 @@ void rj_pp::locally_perfect_MAP(Particle<changepoint>* p, bool smoothing){
       double left_value = (*X)[0][index_i-1]+epsilon;// : m_pm->get_start();
       if( i==0 || left_value > p->get_theta_component(i-1)->getchangepoint()){
 	changepoint* proposed_cpobj = new changepoint(left_value,index_i);
-	double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,proposed_cpobj);
-	double likelihood_contribution_right = m_pm->log_likelihood_interval(proposed_cpobj, cpobj_right);
+	double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,proposed_cpobj,i>0?p->get_theta_component(i-2):NULL);
+	double likelihood_contribution_right = m_pm->log_likelihood_interval(proposed_cpobj, cpobj_right, cpobj_left);
 	double log_posterior_ratio = likelihood_contribution_left+likelihood_contribution_right-old_likelihood;
 	if(log_posterior_ratio>0){
 	  proposed_cpobj->setlikelihood(likelihood_contribution_right);
@@ -919,8 +919,8 @@ void rj_pp::locally_perfect_MAP(Particle<changepoint>* p, bool smoothing){
       double right_value = (*X)[0][index_i];// - epsilon;// : m_pm->get_end();
       if( i==size-1 || right_value < p->get_theta_component(i+1)->getchangepoint()){
 	changepoint* proposed_cpobj = new changepoint(right_value,index_i);
-	double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,proposed_cpobj);
-	double likelihood_contribution_right = m_pm->log_likelihood_interval(proposed_cpobj, cpobj_right);
+	double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,proposed_cpobj,i>0?p->get_theta_component(i-2):NULL);
+	double likelihood_contribution_right = m_pm->log_likelihood_interval(proposed_cpobj, cpobj_right, cpobj_left);
 	proposed_cpobj->setlikelihood(likelihood_contribution_right);
 	double log_posterior_ratio = likelihood_contribution_left+likelihood_contribution_right-old_likelihood;
 	if(log_posterior_ratio>0){
@@ -955,6 +955,7 @@ void rj_pp::calculate_importance_weight(){
   m_current_log_importance_weight=0;
 
 
+  m_pm->set_prior_parameters(NULL,m_current_particle->get_theta_component(-1));
   double prior_parameter_1 = m_pm->get_alpha();
   double prior_parameter_2 = m_pm->get_beta();
   double intep=(m_current_particle->get_theta_component(-1))->getmeanvalue(); 	 
@@ -963,6 +964,9 @@ void rj_pp::calculate_importance_weight(){
 
 //m_intensity[k]/=gsl_ran_gamma_pdf (inte, 0.1, (double)1.0/0.1);
   for(unsigned int i=0; i<m_current_particle->get_dim_theta(); i++){
+    m_pm->set_prior_parameters(m_current_particle->get_theta_component(i-1),m_current_particle->get_theta_component(i));
+    prior_parameter_1 = m_pm->get_alpha();
+    prior_parameter_2 = m_pm->get_beta();
     double inte=(m_current_particle->get_theta_component(i))->getmeanvalue();
     intep=(m_current_particle->get_theta_component(i-1))->getmeanvalue();
       m_current_log_importance_weight+=log(gsl_ran_gamma_pdf (inte, intep*intep/5, (double)5/intep));
