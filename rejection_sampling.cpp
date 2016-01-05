@@ -74,27 +74,28 @@ void rejection_sampling::sample_from_prior() {
       sort(changepoints.begin(), changepoints.end());
       cp = new changepoint(changepoints[0], 0, 0, 0);
       m_pm->set_data_index(cp, 0, cpintercept);
-      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, cp));
-      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, cp));			 
+      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, cp, NULL));
+      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, cp, NULL));	
       for (int j = 0; j < ncps - 1; j++) {
 	cp1 = new changepoint(changepoints[j + 1], 0, 0, 0);
 	m_pm->set_data_index(cp1, 0, cp);
-	cp->setlikelihood(m_pm->log_likelihood_interval(cp, cp1));
+	cp->setlikelihood(m_pm->log_likelihood_interval(cp, cp1, cpintercept));
 	if (m_calculate_mean) {
-	  cp->setmeanvalue(m_pm->calculate_mean(cp, cp1));
+	  cp->setmeanvalue(m_pm->calculate_mean(cp, cp1, cpintercept));
 	}
 	m_sample[i]->add_component(cp, j);
+	cpintercept = cp;
 	cp = cp1;
       }
-      cp->setlikelihood(m_pm->log_likelihood_interval(cp, m_end_of_int_changepoint));
+      cp->setlikelihood(m_pm->log_likelihood_interval(cp, m_end_of_int_changepoint, cpintercept));
       if (m_calculate_mean) {
-	cp->setmeanvalue(m_pm->calculate_mean(cp, m_end_of_int_changepoint));
+	cp->setmeanvalue(m_pm->calculate_mean(cp, m_end_of_int_changepoint, cpintercept));
       }
       m_sample[i]->add_component(cp, ncps-1);
       changepoints.clear();
     } else {
-      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, m_end_of_int_changepoint));
-      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, m_end_of_int_changepoint));
+      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, m_end_of_int_changepoint, NULL));
+      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, m_end_of_int_changepoint, NULL));
     }	
   }    
 

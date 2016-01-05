@@ -11,7 +11,7 @@ endif
 
 .PHONY: clean
 
-all: mainRJ_example mainSMC_example mainSMC_vastdata
+all: mainRJ_example mainSMC_example #mainSMC_vastdata
 
 mainRJ_example: mainRJ_example.cpp $(OBJS) #$(HEADERS)
 

@@ -115,11 +115,13 @@ void pp_model::set_prior_parameters(changepoint *obj1, changepoint *obj2){
   if(!m_alternative_gamma_prior)
     return;
   if(obj1){
+    double a0 = 0.01;
+    double b0 = 0.1;
     unsigned long long int i1 = obj1->getdataindex();
     unsigned long long int i2 = obj2->getdataindex();
     double t1 = obj1->getchangepoint();
     double t2 = obj2->getchangepoint();
-    double lambda_hat = (i2-i1)/(t2-t1);
+    double lambda_hat = (i2-i1+a0)/(t2-t1+b0);
     m_alpha = lambda_hat/m_chi;
     m_beta = m_alpha*lambda_hat;
   }
