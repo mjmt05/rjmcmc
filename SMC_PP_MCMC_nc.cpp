@@ -786,7 +786,7 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	m_sample_dummy[ds][index_new] = new Particle<changepoint>(m_sample_A[ds][index_A],m_sample_B[ds][index_B]);
 	
 	changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
-	
+
 	likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
 	
 	cpobj_new_A->setlikelihood(likelihood_joint);

@@ -19,7 +19,7 @@ class probability_model{
   probability_model(string* data_filename = NULL, string* seasonal_data_filename = NULL, double season = DBL_MAX, bool make_time_scale = true );
   virtual ~probability_model();
   void construct();
-  void set_prior_parameters(changepoint *obj1, changepoint* ojb2){}
+  virtual void set_prior_parameters(changepoint *obj1, changepoint* obj2){}
   virtual double log_likelihood_interval(changepoint *, changepoint *, changepoint * = NULL) = 0 ;
   virtual double log_likelihood_interval(double t1, double t2){ return 0;}
   virtual double log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){return 0;}
@@ -29,7 +29,7 @@ class probability_model{
   virtual double calculate_log_predictive_df(double t1, double t2, double t3, bool lower_tail = true ){ return 0; }
   virtual void calculate_sequential_log_predictive_dfs(double start, double end, double increment, bool lower_tail = true, bool two_sided = false, double control_chart_weight = 0.05, string* filename_ptr = NULL, vector<double>* dfs = NULL ){if(dfs) for(unsigned int i=0; i<(end-start)/increment; i++) dfs->push_back(-LOG_TWO);}
   virtual double calculate_log_predictive_df_bounds( double dt, bool lower_tail = true, bool two_sided = false, bool increment_parameters = true ){ m_pvalue_pair = make_pair(-LOG_TWO,-LOG_TWO); return -LOG_TWO; }
-  virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *, changepoint * = NULL){}
+  virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *){}
   virtual double calculate_mean(changepoint *, changepoint *, changepoint * = NULL) = 0;
   virtual double draw_mean_from_posterior(changepoint *, changepoint *, changepoint * = NULL){ return m_mean;}
   virtual void set_data_index(changepoint *, unsigned int=0,changepoint * = NULL, changepoint * = NULL);

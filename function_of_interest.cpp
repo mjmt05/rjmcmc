@@ -233,7 +233,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
     begin=interval_begin;
   
 
-  //  cout << sum_weights << endl;
+  //    cout << sum_weights << endl;
   if(m_coal_importance_sampling && !m_fixed){
     Particle<changepoint> * temp;
     long double temp_weight;

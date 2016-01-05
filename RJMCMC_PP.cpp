@@ -742,6 +742,7 @@ bool rj_pp::draw_means_from_posterior(bool test_monotonicity){
   changepoint *cpobj_left = m_current_particle->get_theta_component(-1);
   double cp_left_value=cpobj_left->getchangepoint();
   changepoint *cpobj_right = NULL;
+  changepoint *cpobj_left2 = NULL;
   bool monotonic = test_monotonicity;
   double last_right_mean = -DBL_MAX;
   for( unsigned int position = 0; position <= m_k; position++ ){
@@ -750,7 +751,7 @@ bool rj_pp::draw_means_from_posterior(bool test_monotonicity){
     else
       cpobj_right = m_current_particle->get_theta_component(position);
     double cp_right_value=cpobj_right->getchangepoint();
-    double mean = m_pm->draw_mean_from_posterior(cpobj_left, cpobj_right);
+    double mean = m_pm->draw_mean_from_posterior(cpobj_left, cpobj_right,cpobj_left2);
     cpobj_left->setmeanvalue(mean);
     cpobj_left->setvarvalue(m_pm->get_var());
     if(monotonic){
@@ -759,6 +760,7 @@ bool rj_pp::draw_means_from_posterior(bool test_monotonicity){
       else
 	last_right_mean=mean*m_pm->get_mean_function(cp_right_value-cp_left_value);
     }
+    cpobj_left2 = cpobj_left;
     cpobj_left = cpobj_right;
     cp_left_value=cp_right_value;
   }

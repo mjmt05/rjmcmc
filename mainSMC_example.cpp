@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
   probability_model * ppptr = NULL;
   
-  cout << "seed " << o.m_seed << endl;
+  cerr << "seed " << o.m_seed << endl;
 
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool dovariable = 0; //for doing a variable sample size approach

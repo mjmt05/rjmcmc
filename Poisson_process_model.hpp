@@ -22,7 +22,7 @@ class pp_model : public probability_model{
   virtual void set_prior_parameters(changepoint *, changepoint*);
    virtual double log_likelihood_interval(changepoint *, changepoint *, changepoint * = NULL);
    virtual double log_likelihood_interval(double t1, double t2);
-   virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *, changepoint * = NULL);
+   virtual void calculate_posterior_mean_parameters(changepoint *, changepoint *);
    virtual double draw_mean_from_posterior(changepoint *, changepoint *, changepoint * = NULL);
    virtual double calculate_log_predictive_df(double t1, double t2, double t3, bool lower_tail = true );
    virtual void calculate_sequential_log_predictive_dfs(double start, double end, double increment, bool lower_tail = true, bool two_sided = false, double control_chart_weight = 0.05, string* filename_ptr = NULL, vector<double>* dfs = NULL );

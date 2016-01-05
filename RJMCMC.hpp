@@ -312,7 +312,6 @@ template<class T>
     m_move_accept = 0;
     m_move_parameter_accept=0;
     m_continue_loop=1;
-
     initiate_sample(m_initial_sample);
     m_iters = -m_burnin;
     first=1;
@@ -578,7 +577,6 @@ template<class T>
 	  calculate_importance_weight();
 	else
 	  m_current_log_importance_weight=-DBL_MAX;
-	cout << m_current_log_importance_weight << endl;
         m_current_particle->set_weight(m_current_log_importance_weight);
         m_current_importance_weight = exp(m_current_log_importance_weight);
       }

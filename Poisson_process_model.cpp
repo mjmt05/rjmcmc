@@ -115,20 +115,20 @@ void pp_model::set_prior_parameters(changepoint *obj1, changepoint *obj2){
   if(!m_alternative_gamma_prior)
     return;
   if(obj1){
-    double a0 = 0.01;
-    double b0 = 0.1;
-    unsigned long long int i1 = obj1->getdataindex();
+    double a0 = .01;
+    double b0 = .1;
+    unsigned long long int i1 = 0;//obj1->getdataindex();
     unsigned long long int i2 = obj2->getdataindex();
-    double t1 = obj1->getchangepoint();
+    double t1 = 0;//obj1->getchangepoint();
     double t2 = obj2->getchangepoint();
     double lambda_hat = (i2-i1+a0)/(t2-t1+b0);
-    m_alpha = lambda_hat/m_chi;
-    m_beta = m_alpha*lambda_hat;
+    m_beta = lambda_hat/m_chi;
+    m_alpha = m_beta*lambda_hat;
   }
   else{
     m_alpha = 4.5;
     m_beta = 1.5;
-  }
+  }  
 }
 
 double pp_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint * objl1){
@@ -193,9 +193,7 @@ double pp_model::poisson_regression_log_likelihood_interval(unsigned long long i
   return log_likelihood_length_and_count(m_t,m_r);
 }
 
-void pp_model::calculate_posterior_mean_parameters(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-  if(m_alternative_gamma_prior)
-    set_prior_parameters(objl1, obj1);
+void pp_model::calculate_posterior_mean_parameters(changepoint *obj1, changepoint *obj2){
   //number of uncensored observations in each interval
   unsigned long long int i1 = obj1->getdataindex();
   unsigned long long int i2 = obj2->getdataindex();
@@ -226,13 +224,12 @@ void pp_model::calculate_posterior_mean_parameters(changepoint *obj1, changepoin
 }
 
 double pp_model::calculate_mean(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-  if(m_alternative_gamma_prior)
-    set_prior_parameters(objl1, obj1);
   if (!m_random_mean) {
+    set_prior_parameters(objl1, obj1);
     calculate_posterior_mean_parameters(obj1,obj2);
     m_mean = m_alpha_star/m_beta_star;
   } else {
-    m_mean = draw_mean_from_posterior(obj1, obj2);
+    m_mean = draw_mean_from_posterior(obj1, obj2, objl1);
   }
   m_var = m_mean/m_beta_star;
   return m_mean;
@@ -240,12 +237,11 @@ double pp_model::calculate_mean(changepoint *obj1, changepoint *obj2, changepoin
 
 
 double pp_model::draw_mean_from_posterior(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-  if(m_alternative_gamma_prior)
-    set_prior_parameters(objl1, obj1);
+  set_prior_parameters(objl1, obj1);
   if(!m_posterior_mean) {
     return gsl_ran_gamma(m_rng,m_alpha,1.0/m_beta);
   }
-   calculate_posterior_mean_parameters(obj1,obj2);
+  calculate_posterior_mean_parameters(obj1,obj2);
    if(!m_rng){
       m_rng = gsl_rng_alloc(gsl_rng_taus);
       gsl_rng_set (m_rng,0);
