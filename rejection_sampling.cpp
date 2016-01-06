@@ -69,7 +69,7 @@ double rejection_sampling::sample_mean(changepoint *obj1) {
   double lambda;
   if (!obj1) {
     alpha = 4.5;
-    beta = 1.5;
+    beta = 1/1.5;
   } else {
     lambda = obj1->getmeanvalue();
     //    if (lambda < 1e-100) {
@@ -86,7 +86,7 @@ double rejection_sampling::sample_mean(changepoint *obj1) {
       
     
   }
-  double mean = gsl_ran_gamma(m_r, alpha, 1.0/beta);
+  double mean = gsl_ran_gamma(m_r, alpha, beta);
   if (mean != mean) {
     cout << lambda << " " << alpha << " " << 1.0 / beta << endl;
   }

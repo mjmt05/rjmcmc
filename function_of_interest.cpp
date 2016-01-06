@@ -221,7 +221,7 @@ double Function_of_Interest::log_gamma_pdf(double val, double alpha, double beta
   return log(temp);
 }
    
-void Function_of_Interest::calculate_function(double interval_begin, double interval_end,Particle<changepoint> ** sample,long long int sample_size, double * weights, double sum_weights, double sum_weights_squared, int iters,bool normalise, probability_model * pm){
+void Function_of_Interest::calculate_function(double interval_begin, double interval_end,Particle<changepoint> ** sample,long long int sample_size, double * weights, double& sum_weights, double sum_weights_squared, int iters,bool normalise, probability_model * pm){
   double begin;
   m_min_distance = interval_end;
   bool create_weights=0;
@@ -362,7 +362,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
 	if(m_calculate_intensity && k>=fb){
 	  double e;
 	  pm?e = pm->get_mean_function(g):e=1;
-	  m_intensity[k] += cpobj->getmeanvalue()*e*weights[i];
+	  m_intensity[k] += cpobj->getmeanvalue()*e*weights[i]/sum_weights;
    	}
 	
 	if(m_instantaneous){
