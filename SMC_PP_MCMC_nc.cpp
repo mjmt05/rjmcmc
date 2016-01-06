@@ -862,8 +862,13 @@ void SMC_PP_MCMC::calculate_function_of_interest(double start, double end){
 
 	m_functionofinterest[ds]->reset_prob();
 	}
-      if(m_process_observed[ds]>0)
-	m_functionofinterest[ds]->calculate_function(start,end,m_sample_A[ds],m_sample_size_A[ds],m_exp_weights[ds],m_sum_exp_weights[ds],m_sum_squared_exp_weights[ds],iters,1,m_pm[ds]);
+      if(m_process_observed[ds]>0){
+	double* temp_weights=new double[m_sample_size_A[ds]];
+	for(int i=0;i<m_sample_size_A[ds];i++)
+	  temp_weights[i]=m_exp_weights[ds][i];
+	m_functionofinterest[ds]->calculate_function(start,end,m_sample_A[ds],m_sample_size_A[ds],temp_weights,m_sum_exp_weights[ds],m_sum_squared_exp_weights[ds],iters,1,m_pm[ds]);
+	delete [] temp_weights;
+      }
     }
   }
 }

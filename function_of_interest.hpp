@@ -13,7 +13,7 @@ class Function_of_Interest{
   ~Function_of_Interest();
 
 
-  void calculate_function(double, double, Particle<changepoint> **, long long int, double *,double&,double,int,bool normalise=1,probability_model * =NULL);
+  void calculate_function(double, double, Particle<changepoint> **, long long int, double *,double,double,int,bool normalise=1,probability_model * =NULL);
   void normalise_function(double,int,int,int,int iters=0);
   long double * get_g(){return m_exp_last_changepoint;}
   long double * get_variance_g(){return m_variance_exp_last_changepoint;}
