@@ -72,23 +72,23 @@ double rejection_sampling::sample_mean(changepoint *obj1) {
     beta = 1/1.5;
   } else {
     lambda = obj1->getmeanvalue();
-    //    if (lambda < 1e-100) {
-    //  lambda = 1e-100;
-    //}
+    if (lambda < 1e-100) {
+      lambda = 1e-100;
+    }
     beta = 5.0 / lambda;
     if (isinf(beta)) {
-      beta = DBL_MAX;
+      beta = DBL_MAX/100;
     }
     alpha = lambda * lambda / 5.0;
     if (alpha == 0) {
-      alpha = DBL_MIN;
+      alpha = DBL_MIN*100;
     }
       
     
   }
   double mean = gsl_ran_gamma(m_r, alpha, beta);
   if (mean != mean) {
-    cout << lambda << " " << alpha << " " << 1.0 / beta << endl;
+    cerr << lambda << " " << alpha << " " << 1.0 / beta << endl;
   }
   if (mean <= 0) {
     mean = DBL_MIN; //1e-100;
