@@ -209,12 +209,15 @@ double Function_of_Interest::calculate_variance_prob(int sample_size){
   
 
 double Function_of_Interest::log_gamma_pdf(double val, double alpha, double beta) {
-  double temp = gsl_ran_gamma_pdf (val, alpha, beta);
-  if (temp <= 0 ) {
-    //cout << val << " " << alpha << " " << beta << endl;
-    temp = DBL_MIN;
+  if (alpha == 0) {
+    alpha = DBL_MIN;
   }
-
+  double temp = gsl_ran_gamma_pdf (val, alpha, beta);
+  if (temp!= temp || isinf(temp)) {
+    cout << "function of interest" << val << " " << alpha << " " << beta << endl;
+  }
+  
+  //cout << endl;
   return log(temp);
 }
    
@@ -231,7 +234,6 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
     begin=m_start; 
   else
     begin=interval_begin;
-  
 
   //    cout << sum_weights << endl;
   if(m_coal_importance_sampling && !m_fixed){
@@ -247,6 +249,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
       double intep=(temp->get_theta_component(-1))->getmeanvalue(); 	 
       temp_weight+=log_gamma_pdf (intep, 4.5, (double)1.0/1.5);
       temp_weight-=log_gamma_pdf (intep, prior_parameter_1, (double)1.0/prior_parameter_2);
+    
       double inte;
       for(unsigned int i=0; i<temp->get_dim_theta(); i++){
 	pm->set_prior_parameters(temp->get_theta_component(i-1),temp->get_theta_component(i));
@@ -256,6 +259,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
 	intep=(temp->get_theta_component(i-1))->getmeanvalue();
 	temp_weight+=log_gamma_pdf (inte, intep*intep/5.0, (double)5/intep);
 	temp_weight-=log_gamma_pdf (inte, prior_parameter_1, (double)1.0/prior_parameter_2);
+
       }
       
       weights[j]*=exp(temp_weight);

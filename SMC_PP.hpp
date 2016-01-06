@@ -122,8 +122,9 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
   m_sample_A = new Particle<T> **[m_num];
   if(!MCMC_only){
     m_sample_B = new Particle<T>**[m_num];
-    for(int i=0; i<m_num; i++)
+    for(int i=0; i<m_num; i++) {
       m_sample_A[i]= new Particle<T>*[sample_size];
+    }
   }else{
     m_sample_B=NULL;
   }
@@ -306,7 +307,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
     else{
       sample_particles(m_start+m_change_in_time*i,m_start+m_change_in_time*(i+1));
     }
-    if(i>0 && MCMC_only==0){
+    if(i>0 && MCMC_only==0 && !m_sample_from_prior){
       permute_sample();
     }
 
@@ -341,7 +342,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	  // cout<<"ESS: "<<ds<<" "<<i<<" "<<ESS[ds]<<endl;  
 	  ESS_resample_particles(m_start+m_change_in_time*(i+1),ds);
 	  ESS[ds]=calculate_ESS(ds);
-	  resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
+	  //resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
 	}
       }
     }

@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
   probability_model * ppptr = NULL;
   
-  cerr << "seed " << o.m_seed << endl;
+  cout << "seed " << o.m_seed << endl;
 
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool dovariable = 0; //for doing a variable sample size approach
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
-    static_cast<pp_model*>(ppptr)->use_alternative_gamma_prior();
+    //static_cast<pp_model*>(ppptr)->use_alternative_gamma_prior();
     if (o.m_importance_sampling) {
       ppptr->use_random_mean(o.m_seed);
       /*if (sample_from_prior) {

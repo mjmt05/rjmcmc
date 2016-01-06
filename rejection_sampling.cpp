@@ -38,6 +38,7 @@ rejection_sampling::rejection_sampling(double start, double cp_start, double end
 }
 
 rejection_sampling::~rejection_sampling() {
+  
   gsl_rng_free(m_r);
   if (m_sample) {
     for (long long int i = 0; i < m_sample_size; i++) {
@@ -52,8 +53,115 @@ rejection_sampling::~rejection_sampling() {
   delete m_end_of_int_changepoint;
 }
 
+double rejection_sampling::alternate_likelihood(changepoint *obj1, changepoint *obj2) {
+  unsigned long long int i1 = obj1->getdataindex();
+  unsigned long long int i2 = obj2->getdataindex();
+  double t1 = obj1->getchangepoint();
+  double t2 = obj2->getchangepoint();
+  double lambda = obj1->getmeanvalue();
+  double likelihood = (i2 - i1) * log(lambda) - lambda * (t2- t1);
+  return likelihood;
+}
 
-void rejection_sampling::sample_from_prior() {
+double rejection_sampling::sample_mean(changepoint *obj1) {
+  double alpha;
+  double beta;
+  double lambda;
+  if (!obj1) {
+    alpha = 4.5;
+    beta = 1.5;
+  } else {
+    lambda = obj1->getmeanvalue();
+    //    if (lambda < 1e-100) {
+    //  lambda = 1e-100;
+    //}
+    beta = 5.0 / lambda;
+    if (isinf(beta)) {
+      beta = DBL_MAX;
+    }
+    alpha = lambda * lambda / 5.0;
+    if (alpha == 0) {
+      alpha = DBL_MIN;
+    }
+      
+    
+  }
+  double mean = gsl_ran_gamma(m_r, alpha, 1.0/beta);
+  if (mean != mean) {
+    cout << lambda << " " << alpha << " " << 1.0 / beta << endl;
+  }
+  if (mean <= 0) {
+    mean = DBL_MIN; //1e-100;
+  }
+
+  return mean;
+}
+
+
+
+void rejection_sampling::sample_from_prior(Particle<changepoint> ** previous_sample) {
+  int ncps;
+  double length_of_interval = m_end_time - m_cp_start;
+  changepoint *cpintercept = NULL;
+  changepoint *cp = NULL, *cp1 = NULL; 
+  unsigned long long int data_index_start = m_pm->get_data()->find_data_index(m_cp_start);
+//cout << current_likelihood << " " << data_index_end << " " << data_index_start << " " << m_start_time << " " << m_end_time;
+  m_sample = new Particle<changepoint> *[m_sample_size];
+
+  for (int i = 0; i < m_sample_size; i++) {
+    ncps = gsl_ran_poisson(m_r, m_cp_prior * length_of_interval);
+    cpintercept = new changepoint(m_cp_start, data_index_start, 0, 0);
+    m_sample[i] = new Particle<changepoint>(0, NULL, cpintercept);
+    if (ncps > 0) {
+      vector<double> changepoints (ncps);
+      for (int j = 0; j < ncps; j++) {
+	changepoints[j] = gsl_ran_flat(m_r, m_cp_start, m_end_time);
+      }
+      sort(changepoints.begin(), changepoints.end());
+      cp = new changepoint(changepoints[0], 0, 0, 0);
+      m_pm->set_data_index(cp, 0, cpintercept);
+      if (previous_sample) {
+	int dim = previous_sample[i]->get_dim_theta();
+	double mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
+	cpintercept->setmeanvalue(mean);
+      } else {
+	cpintercept->setmeanvalue(sample_mean(NULL));
+      }
+      cpintercept->setlikelihood(alternate_likelihood(cpintercept, cp));
+
+      	
+      for (int j = 0; j < ncps - 1; j++) {
+	cp1 = new changepoint(changepoints[j + 1], 0, 0, 0);
+	m_pm->set_data_index(cp1, 0, cp);
+	if (m_calculate_mean) {
+	  cp->setmeanvalue(sample_mean(cpintercept));
+	}
+	cp->setlikelihood(alternate_likelihood(cp, cp1));
+	m_sample[i]->add_component(cp, j);
+	cpintercept = cp;
+	cp = cp1;
+      }
+      if (m_calculate_mean) {
+	cp->setmeanvalue(sample_mean(cpintercept));
+      }
+      cp->setlikelihood(alternate_likelihood(cp, m_end_of_int_changepoint));
+      m_sample[i]->add_component(cp, ncps-1);
+      changepoints.clear();
+    } else {
+      if (previous_sample) {
+	int dim = previous_sample[i]->get_dim_theta();
+	double mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
+	cpintercept->setmeanvalue(mean);
+      } else {
+	cpintercept->setmeanvalue(sample_mean(NULL));
+      }
+      cpintercept->setlikelihood(alternate_likelihood(cpintercept, m_end_of_int_changepoint));
+    }	
+  }    
+
+}
+
+/*void rejection_sampling::sample_from_prior() {
   int ncps;
   double length_of_interval = m_end_time - m_cp_start;
   changepoint *cpintercept = NULL;
@@ -100,7 +208,7 @@ void rejection_sampling::sample_from_prior() {
   }    
 
 
-}
+  }*/
 
 void
 rejection_sampling::run_simulation() {

@@ -97,7 +97,7 @@ changepoint* rj_pp::generate_new_parameter()const {
   double new_value,which;
   which = -1;
   changepoint *cpobj;
-  
+
   if (m_discrete) {
     bool alreadyexists = true;
     cpobj = new changepoint(0, 0);
@@ -151,7 +151,6 @@ changepoint* rj_pp::generate_new_parameter()const {
   }
   //    unsigned int new_data_index = m_discrete? get_data_index(new_value,0) : 0; if !m_discrete, delay finding index until neighbouring changepoints are identified.
   
-   
   return(cpobj);
 }
 
@@ -224,10 +223,10 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
 	}
       }
     }
-
-
-    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_value, cpobj_right, cpobj_left);
     
+    //cout << "start " << cpobj_right->getchangepoint() << " " << cpobj_left->getchangepoint() << endl;
+    double likelihood_contribution_right = m_pm->log_likelihood_interval(new_value, cpobj_right, cpobj_left);
+
     new_value -> setlikelihood(likelihood_contribution_right);
 
  
@@ -236,8 +235,9 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
         new_value->setmeanvalue(mean);
         new_value->setvarvalue(m_pm->get_var());
     }
-
+   
     double likelihood_contribution_left = m_pm->log_likelihood_interval(cpobj_left,new_value,position>0?m_current_particle->get_theta_component(position-2):NULL);
+    
     double old_likelihood = cpobj_left->getlikelihood();
     double log_likelihood_ratio = likelihood_contribution_right + likelihood_contribution_left - old_likelihood;
 
@@ -351,7 +351,6 @@ changepoint* rj_pp::move_parameter(unsigned int index_theta_move) const{
 
     cpobj = new changepoint(new_value,0);
     m_pm->set_data_index(cpobj,0,cpobj_left,cpobj_right);
-
     return(cpobj);
 }
 
@@ -479,7 +478,6 @@ double rj_pp::log_prior_ratio_move_parameter() const{
 }
 
 double rj_pp::log_proposal_ratio_birth(changepoint* new_value) const{
-
     int k = m_current_particle->get_dim_theta();
 
     double value = 0;

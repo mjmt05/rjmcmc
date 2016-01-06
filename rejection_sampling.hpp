@@ -15,7 +15,7 @@ public:
   ~rejection_sampling();
   void write_1d_histogram_to_file(const string output_filename="1d_distribution.txt"){m_histogram->write_1d_histogram_to_file(output_filename);}
   void run_simulation();
-  void sample_from_prior();
+  void sample_from_prior(Particle<changepoint> **);
   Particle<changepoint>** get_sample() {return m_sample;}
   void write_frequency_counts_to_file(const char*);
   double m_acceptance_rate;
@@ -42,7 +42,8 @@ private:
   int m_num_bins;
   bool m_calculate_mean;
   changepoint *m_end_of_int_changepoint;
-  
+  double sample_mean(changepoint *);
+  double alternate_likelihood(changepoint *, changepoint *);
 };
 
 

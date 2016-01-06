@@ -340,7 +340,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  }
 
 	  m_rj_B[ds]->runsimulation();
-	  	    
+
 	  if(m_variable_B){
 	    m_vec_KLS[ds]=m_rj_B[ds]->get_divergence();
 	    current_number+=m_initial_iterations;
@@ -361,7 +361,11 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	    m_rejection_sampling[ds]->run_simulation();
 	    m_rejection_sampling_acceptance_rate[ds][iters] = m_rejection_sampling[ds]->m_acceptance_rate;
 	  } else {
-	    m_rejection_sampling[ds]->sample_from_prior();
+	    if (start == m_start) {
+	      m_rejection_sampling[ds]->sample_from_prior(NULL);
+	    } else {
+	      m_rejection_sampling[ds]->sample_from_prior(m_sample_A[ds]);
+	    }
 	  }
 	  m_sample_B[ds] = m_rejection_sampling[ds]->get_sample();
 	  
@@ -785,21 +789,21 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	
 	m_sample_dummy[ds][index_new] = new Particle<changepoint>(m_sample_A[ds][index_A],m_sample_B[ds][index_B]);
 	
-	changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
-
-	likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
-	
-	cpobj_new_A->setlikelihood(likelihood_joint);
-	double mean;
-	if(m_calculate_intensity && m_conjugate){
-	  mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
-	  cpobj_new_A->setmeanvalue(mean);
-	}
-        
 	if (!m_sample_from_prior) {
+	  changepoint * cpobj_new_A = m_sample_dummy[ds][index_new]->get_theta_component(dim-1);
+
+	  likelihood_joint = m_pm[ds]->log_likelihood_interval(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
+	
+	  cpobj_new_A->setlikelihood(likelihood_joint);
+	  double mean;
+	  if(m_calculate_intensity && m_conjugate){
+	    mean = m_pm[ds]->calculate_mean(cpobj_new_A,cpobjB1,dim>0?m_sample_dummy[ds][index_new]->get_theta_component(dim-2):NULL);
+	    cpobj_new_A->setmeanvalue(mean);
+	  }
+        
 	  incremental_weight += likelihood_joint-likelihood_left-likelihood_right+prior_term;
 	} else {
-	  incremental_weight += likelihood_joint - likelihood_left;
+	  incremental_weight += m_sample_B[ds][index_B]->get_theta_component(-1)->getlikelihood();
 	  for (int i = 0; i < dim1; i++) {
 	    incremental_weight += m_sample_B[ds][index_B]->get_theta_component(i)->getlikelihood();
 	  }

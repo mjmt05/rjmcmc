@@ -333,7 +333,6 @@ template<class T>
   m_acceptances_between_thinning = 0;
   //for (long long int i= -m_burnin; i<m_iterations*m_thinning; i++){
   while(m_continue_loop){
-
   
     n_iters=m_iters/m_thinning;
     
@@ -344,8 +343,9 @@ template<class T>
     }
 
     m_log_proposal_ratio = 0;
-   
+    
     u1=gsl_ran_flat(r,0,1);
+
     /*birth*/
     if(u1<=m_b){
       new_value = generate_new_parameter();
@@ -375,9 +375,6 @@ template<class T>
       }
       if(m_iters>0)
 	m_birth_attempt++;
-
-    
-
     }
     /*death*/
     else if (u1<=m_b+m_d && u1>m_b){
@@ -624,7 +621,6 @@ template<class T>
       }
     }
 
-   
     m_iters++;
 
     if(m_iters>m_iterations*m_thinning){
