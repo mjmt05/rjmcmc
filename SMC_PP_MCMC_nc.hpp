@@ -51,6 +51,7 @@ public:
     void print_zero_weights(int, const char *);
     void print_rejection_sampling_acceptance_rates(int, const char *);
   void sample_intensities(Particle<changepoint> **, double, unsigned int, int);
+  void set_discrete_model(){m_discrete = true;}
   
 
 private:
@@ -93,6 +94,7 @@ private:
 	bool m_conjugate;
         double **m_rejection_sampling_acceptance_rate;
         unsigned int **m_num_zero_weights;
+  bool m_discrete;
        
  
         void increase_vector(int);

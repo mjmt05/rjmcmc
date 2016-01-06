@@ -8,7 +8,7 @@ bool SMC_PP_MCMC::MyDataSort(const pair<double,int>& lhs, const pair<double,int>
 SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int sizeA, int sizeB, double nu, double v_nu, probability_model ** pm,int num_data,bool varyB,bool intensity,bool dochangepoint,bool doMCMC, bool exact_sampling, int s)
   :SMC_PP<changepoint>(start,end,intervals,sizeA,sizeB,num_data,varyB,dochangepoint,doMCMC,s),m_calculate_intensity(intensity), m_do_exact_sampling(exact_sampling)
 {
-
+  m_discrete = false;
   m_pm = pm;
   m_nu = nu;
   m_var_nu = v_nu;
@@ -246,7 +246,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       else{
 	tempparticle=NULL;
       }
-      m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], 100000, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,0,tempparticle,(int)(seed*(iters+1)),true);
+      m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], 100000, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,m_discrete,0,tempparticle,(int)(seed*(iters+1)),true);
       if(m_proposal_type && m_vec_proposal_type){
 	if(strcmp(m_proposal_type,"Histogram")==0){
 	  int temp=(((unsigned int*)m_vec_proposal_type)[0])*(iters+1);
@@ -309,7 +309,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  }
 	}
 	if (!m_do_exact_sampling) {
-	  m_rj_B[ds] = new rj_pp((double)(start-avg_distance), (double)end, sample_size, max_theta ,move_width, m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,0,m_variable_B,NULL,(int)seed*(iters+1),true);
+	  m_rj_B[ds] = new rj_pp((double)(start-avg_distance), (double)end, sample_size, max_theta ,move_width, m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,m_discrete,m_variable_B,NULL,(int)seed*(iters+1),true);
 	  
 	  if(!m_conjugate){
 	    m_rj_B[ds]->non_conjugate();
