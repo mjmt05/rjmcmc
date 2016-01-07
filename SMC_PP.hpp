@@ -342,7 +342,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	  // cout<<"ESS: "<<ds<<" "<<i<<" "<<ESS[ds]<<endl;  
 	  ESS_resample_particles(m_start+m_change_in_time*(i+1),ds);
 	  ESS[ds]=calculate_ESS(ds);
-	  //resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
+	  resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
 	}
       }
     }
