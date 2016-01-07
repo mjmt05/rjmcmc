@@ -27,9 +27,10 @@ int main(int argc, char *argv[])
     dataobj = new Data<double>(o.m_datafile,false);
   }
 
-  if (o.m_model == "ur") {
+  if (o.m_model == "ur" || o.m_model == "pregression") {
     o.m_start=0;
-    o.m_end=dataobj->get_cols();
+    o.m_end=dataobj? dataobj->get_cols():dataobj_int->get_cols();
+    cout << o.m_end << endl;
   }
   probability_model * ppptr = NULL;
   
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
   bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = true;
   bool sample_from_prior = false;
+  bool estimate_var_in_ur = false;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
@@ -55,6 +57,8 @@ int main(int argc, char *argv[])
    
   } else if (o.m_model == "ur") {
     ppptr = new ur_model(o.m_gamma_prior_1,o.m_gamma_prior_2,o.m_v,dataobj);
+    if(estimate_var_in_ur)
+      static_cast<ur_model*>(ppptr)->estimate_variance();
   } else if (o.m_model == "pregression") {
     ppptr = new pp_model(dataobj_int,NULL,o.m_gamma_prior_1,o.m_gamma_prior_2);
   } else {
@@ -131,6 +135,9 @@ int main(int argc, char *argv[])
   if(calculate_online_estimate_number_of_cps)
     SMCobj.print_size_of_sample(0,"kSMC.txt");
   
+  if(calculate_online_estimate_number_of_cps)
+    SMCobj.print_last_changepoints(0,"taukSMC.txt");
+  
 
   if(o.m_write_cps_to_file){
     SMCobj.print_sample_A(0);
@@ -151,8 +158,10 @@ int main(int argc, char *argv[])
   if(o.m_print_ESS){
     SMCobj.print_ESS(0,"ess.txt");
   }
-  
-  delete dataobj;
+  if (dataobj)
+    delete dataobj;
+  //  if (dataobj_int)
+  //    delete dataobj_int;
   delete ppptr;  
   return(0);
 }

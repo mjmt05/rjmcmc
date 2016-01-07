@@ -44,6 +44,7 @@ public:
   double calculate_ESS(int);
   void set_ESS_threshold(double threshold){m_ESS_percentage=threshold; m_ESS_threshold=m_max_sample_size_A*m_ESS_percentage;}
   void print_size_of_sample(int ds, const char *);
+  void print_last_changepoints(int ds, const char *);
   void print_ESS(int ds, const char *);
   void calculate_exp_weights(int);
   void sort( int *, unsigned int);
@@ -83,10 +84,12 @@ protected:
     int m_num_BF_iterations;
     const char * m_BF_resampling_type;
     double ** m_size_of_sample;
+    double ** m_last_changepoint;
     int iters;
     int m_num;
     bool m_variable_B;
     bool m_online_num_changepoints;
+    bool m_online_last_changepoint;
     bool MCMC_only;
     //number of data sets
     int * m_process_observed;
@@ -100,7 +103,7 @@ protected:
 };
 template<class T>
 SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
-:m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),MCMC_only(doMCMC),seed(s)
+:m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),m_online_last_changepoint(dochangepoint),MCMC_only(doMCMC),seed(s)
 {
 
   m_importance_sampling = 0;
@@ -209,11 +212,19 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
     m_size_of_sample[0] = new double[m_num_of_intervals*m_num];
     for(int i=1; i<m_num; i++)
       m_size_of_sample[i]=m_size_of_sample[i-1]+(m_num_of_intervals);
-
     for(int i=0; i<m_num; i++)
       for(unsigned int j=0; j<m_num_of_intervals; j++)
 	m_size_of_sample[i][j]=0;
   }else{m_size_of_sample=NULL;}
+  if(m_online_last_changepoint){
+    m_last_changepoint = new double * [m_num];
+    m_last_changepoint[0] = new double[m_num_of_intervals*m_num];
+    for(int i=1; i<m_num; i++)
+      m_last_changepoint[i]=m_last_changepoint[i-1]+(m_num_of_intervals);
+    for(int i=0; i<m_num; i++)
+      for(unsigned int j=0; j<m_num_of_intervals; j++)
+	m_last_changepoint[i][j]=0;
+  }else{m_last_changepoint=NULL;}
     
 
 }
@@ -257,6 +268,10 @@ SMC_PP<T>::~SMC_PP(){
   if(m_online_num_changepoints){
     delete [] m_size_of_sample[0];
     delete [] m_size_of_sample;
+  }
+  if(m_online_last_changepoint){
+    delete [] m_last_changepoint[0];
+    delete [] m_last_changepoint;
   }
 
   delete [] m_sample_A;
@@ -370,9 +385,17 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
-    
+    if(m_online_last_changepoint){
+      for(int ds=0; ds<m_num; ds++){
+	if(m_process_observed[ds]>0){      
+	  for(unsigned long long int j=0; j<m_sample_size_A[ds]; j++){
+	    m_last_changepoint[ds][i]+=  m_sample_A[ds][j]->get_last_theta_component()->getchangepoint()*m_exp_weights[ds][j];
+	  }
+	  m_last_changepoint[ds][i]/=m_sum_exp_weights[ds];
+	}
+      }
+    }
   }
-
   delete [] ESS;
   delete [] BF;
   delete [] old_sum_weights;
@@ -565,7 +588,7 @@ void SMC_PP<T>::print_ESS(int ds, const char * file){
 template<class T>
 void SMC_PP<T>::print_size_of_sample(int ds, const char * file){
   if(!m_size_of_sample){
-    cerr << "Can not print sample size to file it has not been stored" << endl;
+    cerr << "Cannot print sample size to file it has not been stored" << endl;
     return;
   }
   
@@ -582,6 +605,26 @@ void SMC_PP<T>::print_size_of_sample(int ds, const char * file){
   outfile<<endl;
   outfile.close();
 }
+
+template<class T>
+void SMC_PP<T>::print_last_changepoints(int ds, const char * file){
+  if(!m_last_changepoint){
+    cerr << "Cannot print last changepoint estimates to file, they have not been stored" << endl;
+    return;
+  }
+  ofstream outfile(file, ios::out);
+  if(!outfile){
+    cerr<<"Last changepoint file " << outfile << " could not be opened"<<endl;
+    exit(1);
+  }
+  for(unsigned int i=0; i<m_num_of_intervals; i++){
+    outfile<<m_last_changepoint[ds][i]<<' ';
+  }
+  outfile<<endl;
+  outfile.close();
+}
+
+
 
 template<class T>
 void SMC_PP<T>::print_sample_birth_times(int ds){

@@ -30,6 +30,7 @@ class Particle
   void change_component(T*,int);
   unsigned int get_dim_theta() const {return m_dim_theta;} 
   T* get_theta_component(int k) const;
+  T* get_last_theta_component() const {return get_theta_component(m_dim_theta-1);}
   unsigned int find_position(T *, bool = false, unsigned int = 0, unsigned int = 0);
   void set_log_posterior(double post) {m_log_posterior = post;}
   double get_log_posterior() const {return m_log_posterior;}
