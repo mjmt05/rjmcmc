@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = true;
   bool sample_from_prior = false;
-  bool estimate_var_in_ur = !false;
+  bool estimate_var_in_ur = false;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
