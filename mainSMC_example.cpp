@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
   bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = true;
   bool sample_from_prior = false;
+  bool estimate_var_in_ur = false;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
@@ -55,6 +56,8 @@ int main(int argc, char *argv[])
    
   } else if (o.m_model == "ur") {
     ppptr = new ur_model(o.m_gamma_prior_1,o.m_gamma_prior_2,o.m_v,dataobj);
+    if(estimate_var_in_ur)
+      static_cast<ur_model*>(ppptr)->estimate_variance();
   } else if (o.m_model == "pregression") {
     ppptr = new pp_model(dataobj_int,NULL,o.m_gamma_prior_1,o.m_gamma_prior_2);
   } else {

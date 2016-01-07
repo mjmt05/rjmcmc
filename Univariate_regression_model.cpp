@@ -11,16 +11,13 @@ ur_model::ur_model(double alpha,double gamma, double vconst, Data<double> *data)
     m_inv_v = 1.0 / m_v;
     m_ysum = new double[m_data_points];
     m_ysum2 = new double[m_data_points];
-
     m_ysum[0]= m_data_ur->m_X[0][0];
     m_ysum2[0] = (m_data_ur->m_X[0][0])*(m_data_ur->m_X[0][0]);
-
     for (unsigned int i=1; i<m_data_points; i++){
         m_ysum[i]=m_data_ur->m_X[0][i] + m_ysum[i-1];
         m_ysum2[i]=(m_data_ur->m_X[0][i])*(m_data_ur->m_X[0][i]) +m_ysum2[i-1];
     }
-        
-  
+    m_estimate_variance=false;
 }
 
 ur_model::~ur_model(){
@@ -29,86 +26,65 @@ ur_model::~ur_model(){
     delete [] m_ysum;
     delete[] m_ysum2;
 }
-    
 
 double ur_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-
     double like, y, y2,r;
-    unsigned long long int dataindex1, dataindex2;
-
-    like=m_likelihood_term;
-
-  
-    //number of observations in each interval
+    unsigned long long int dataindex1, dataindex2;  
     dataindex1=obj1->getdataindex();
     dataindex2=obj2->getdataindex();
     r = dataindex2-dataindex1;
-
-     if (r<0){
-        cout<<"r can not be less than 0"<<endl;
-        exit(1);
+    if (r<0){
+      cerr<<"r can not be less than 0"<<endl;
+      exit(1);
     }
 
-     if(r==0){    
-
-         like = 0;
-     }
-     else{
-
-         if(dataindex1==0){
-             y=m_ysum[dataindex2-1];
-             y2=m_ysum2[dataindex2-1];
-         }
-         else{
-             
-             y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
-             y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
-         }
-	 double r_foo = r / 2.0;
-         like += -0.5*log(m_inv_v+r)-(r_foo)*LOG_PI + gsl_sf_lngamma(r_foo+m_alpha)-(r_foo+m_alpha)*log(m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))));
-     }
-
+    if(r==0)    
+      like = 0;
+    else{
+      like=m_likelihood_term;
+      if(dataindex1==0){
+	y=m_ysum[dataindex2-1];
+	y2=m_ysum2[dataindex2-1];
+      }
+      else{
+	y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
+	y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
+      }
+      double r_foo = r / 2.0;
+      like += -0.5*log(m_inv_v+r)-(r_foo)*LOG_PI + gsl_sf_lngamma(r_foo+m_alpha)-(r_foo+m_alpha)*log(m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))));
+    }
     return(like);
-
 }
 
 
 double ur_model::calculate_mean(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-    
+    double y, y2, r;
     unsigned long long int dataindex1, dataindex2;
-
-    double mean, r;
-    
-//number of uncensored observations in each interval
-
     dataindex1=obj1->getdataindex();
     dataindex2=obj2->getdataindex();
     r = dataindex2-dataindex1;
-    
     if (r<0){
-        cout<<"r can not be less than 0"<<endl;
+        cerr<<"r can not be less than 0"<<endl;
         exit(1);
     }
 
     if (r==0){
-        mean=0;
+      m_mean=0;
+      m_var=m_gamma/(m_alpha-1);
     }
     else{
-        
-        if(dataindex1==0){
-             mean = (1.0/(m_inv_v+r))*(m_ysum[dataindex2-1]);
-        }
-        else{
-            mean = (1.0/(m_inv_v+r))*(m_ysum[dataindex2-1]-m_ysum[dataindex1-1]);
-        }
+      if(dataindex1==0){
+	y=m_ysum[dataindex2-1];
+	y2=m_ysum2[dataindex2-1];
+      }
+      else{
+	y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
+	y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
+      }
+      m_mean = (1.0/(m_inv_v+r))*(y);
+      m_var = (m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))))/(m_alpha+.5*r-1);
     }
-    //    if(r>0)
-    //      mean = (m_ysum[dataindex2-1]-m_ysum[dataindex1-1])/double(r);
-    return(mean);
-
+    if(!m_estimate_variance)
+      return(m_mean);
+    return m_var;
 }
-
-
-
-
-    
