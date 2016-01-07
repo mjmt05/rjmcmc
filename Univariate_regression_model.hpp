@@ -18,6 +18,7 @@ class ur_model : public probability_model{
   virtual  double log_likelihood_interval(changepoint *, changepoint *, changepoint * = NULL);
   virtual  double calculate_mean(changepoint *, changepoint *, changepoint * = NULL);
   void estimate_variance(){m_estimate_variance=true;}
+  virtual void use_random_mean(int seed);
 
   private:
 
@@ -31,6 +32,7 @@ class ur_model : public probability_model{
    double * m_ysum2;
    unsigned long long int m_data_points;
    bool m_estimate_variance;//if true, report E[sigma^2] rather than E[mu]
+  bool m_prior_mean;
 };
 
 

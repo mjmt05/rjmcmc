@@ -5,6 +5,7 @@
 ur_model::ur_model(double alpha,double gamma, double vconst, Data<double> *data)
 :probability_model(),m_alpha(alpha),m_gamma(gamma),m_v(vconst)
 {
+  m_prior_mean = 0;
     m_data_ur = data;
     m_data_points = m_data_ur->get_cols();
     m_likelihood_term = -0.5*log(m_v)+m_alpha*log(m_gamma)-gsl_sf_lngamma(m_alpha);
@@ -25,6 +26,12 @@ ur_model::~ur_model(){
   //        delete m_data_ur;
     delete [] m_ysum;
     delete[] m_ysum2;
+}
+
+void ur_model::use_random_mean(int seed) {
+  m_prior_mean = 1;
+  m_rng = gsl_rng_alloc(gsl_rng_taus);
+  gsl_rng_set(m_rng, seed);
 }
 
 double ur_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint *objl1){
@@ -58,33 +65,42 @@ double ur_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, c
 
 
 double ur_model::calculate_mean(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-    double y, y2, r;
-    unsigned long long int dataindex1, dataindex2;
-    dataindex1=obj1->getdataindex();
-    dataindex2=obj2->getdataindex();
-    r = dataindex2-dataindex1;
-    if (r<0){
-        cerr<<"r can not be less than 0"<<endl;
-        exit(1);
-    }
 
-    if (r==0){
-      m_mean=0;
-      m_var=m_gamma/(m_alpha-1);
+  if (m_prior_mean) {
+    double m_var = gsl_ran_gamma(m_rng, m_alpha, m_gamma);
+    m_var = 1.0/m_var;
+    m_mean = gsl_ran_gaussian(m_rng, m_var * m_v);
+    if (!m_estimate_variance)
+      return m_mean;
+    return m_var;
+  }
+  double y, y2, r;
+  unsigned long long int dataindex1, dataindex2;
+  dataindex1=obj1->getdataindex();
+  dataindex2=obj2->getdataindex();
+  r = dataindex2-dataindex1;
+  if (r<0){
+    cerr<<"r can not be less than 0"<<endl;
+    exit(1);
+  }
+
+  if (r==0){
+    m_mean=0;
+    m_var=m_gamma/(m_alpha-1);
+  }
+  else{
+    if(dataindex1==0){
+      y=m_ysum[dataindex2-1];
+      y2=m_ysum2[dataindex2-1];
     }
     else{
-      if(dataindex1==0){
-	y=m_ysum[dataindex2-1];
-	y2=m_ysum2[dataindex2-1];
-      }
-      else{
-	y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
-	y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
-      }
-      m_mean = (1.0/(m_inv_v+r))*(y);
-      m_var = (m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))))/(m_alpha+.5*r-1);
+      y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
+      y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
     }
-    if(!m_estimate_variance)
-      return(m_mean);
-    return m_var;
+    m_mean = (1.0/(m_inv_v+r))*(y);
+    m_var = (m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))))/(m_alpha+.5*r-1);
+  }
+  if(!m_estimate_variance)
+    return(m_mean);
+  return m_var;
 }

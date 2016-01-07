@@ -4,6 +4,7 @@
 #include "histogram_type.hpp"
 #include <vector>
 rejection_sampling::rejection_sampling(double start, double cp_start, double end, long long int sample_size, probability_model *pm, double cp_prior, int seed, bool calculate_mean, bool calculate_sample_histogram, unsigned int grid) {
+  m_smcsamplers_prior = 0;
   m_start_time = start;
   m_cp_start = cp_start;
   m_end_time = end;
@@ -64,6 +65,7 @@ double rejection_sampling::alternate_likelihood(changepoint *obj1, changepoint *
 }
 
 double rejection_sampling::sample_mean(changepoint *obj1) {
+
   double alpha;
   double beta;
   double lambda;
@@ -100,18 +102,23 @@ double rejection_sampling::sample_mean(changepoint *obj1) {
 
 
 void rejection_sampling::sample_from_prior(Particle<changepoint> ** previous_sample) {
+  
+
   int ncps;
   double length_of_interval = m_end_time - m_cp_start;
   changepoint *cpintercept = NULL;
   changepoint *cp = NULL, *cp1 = NULL; 
   unsigned long long int data_index_start = m_pm->get_data()->find_data_index(m_cp_start);
-//cout << current_likelihood << " " << data_index_end << " " << data_index_start << " " << m_start_time << " " << m_end_time;
+  double mean, likelihood;
+
   m_sample = new Particle<changepoint> *[m_sample_size];
 
   for (int i = 0; i < m_sample_size; i++) {
-    ncps = gsl_ran_poisson(m_r, m_cp_prior * length_of_interval);
     cpintercept = new changepoint(m_cp_start, data_index_start, 0, 0);
     m_sample[i] = new Particle<changepoint>(0, NULL, cpintercept);
+
+    ncps = gsl_ran_poisson(m_r, m_cp_prior * length_of_interval);
+  
     if (ncps > 0) {
       vector<double> changepoints (ncps);
       for (int j = 0; j < ncps; j++) {
@@ -122,93 +129,79 @@ void rejection_sampling::sample_from_prior(Particle<changepoint> ** previous_sam
       m_pm->set_data_index(cp, 0, cpintercept);
       if (previous_sample) {
 	int dim = previous_sample[i]->get_dim_theta();
-	double mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
-	cpintercept->setmeanvalue(mean);
+	mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
       } else {
-	cpintercept->setmeanvalue(sample_mean(NULL));
+	if (!m_smcsamplers_prior) {
+	  mean = m_pm->calculate_mean(cpintercept, cp, NULL);
+	} else {
+	  mean = sample_mean(NULL);
+	}
       }
-      cpintercept->setlikelihood(alternate_likelihood(cpintercept, cp));
-
+      cpintercept->setmeanvalue(mean);
+      if (m_smcsamplers_prior) {
+	likelihood = alternate_likelihood(cpintercept, cp);
+      } else {
+	likelihood = m_pm->log_likelihood_interval(cpintercept, cp, NULL);
+      }
+      cpintercept->setlikelihood(likelihood);
       	
       for (int j = 0; j < ncps - 1; j++) {
 	cp1 = new changepoint(changepoints[j + 1], 0, 0, 0);
 	m_pm->set_data_index(cp1, 0, cp);
-	if (m_calculate_mean) {
-	  cp->setmeanvalue(sample_mean(cpintercept));
+	if (m_smcsamplers_prior) {
+	  mean = sample_mean(cpintercept);
+	} else {
+	  mean = m_pm->calculate_mean(cp, cp1, cpintercept);
 	}
-	cp->setlikelihood(alternate_likelihood(cp, cp1));
+	cp->setmeanvalue(mean);
+	if (m_smcsamplers_prior) {
+	  likelihood = alternate_likelihood(cp, cp1);
+	} else {
+	  likelihood = m_pm->log_likelihood_interval(cp, cp1, cpintercept);
+	}
+	cp->setlikelihood(likelihood);
 	m_sample[i]->add_component(cp, j);
 	cpintercept = cp;
 	cp = cp1;
       }
-      if (m_calculate_mean) {
-	cp->setmeanvalue(sample_mean(cpintercept));
+
+      if (m_smcsamplers_prior) {
+	mean = sample_mean(cpintercept);
+      } else {
+	mean = m_pm->calculate_mean(cp, m_end_of_int_changepoint, cpintercept);
       }
-      cp->setlikelihood(alternate_likelihood(cp, m_end_of_int_changepoint));
+      cp->setmeanvalue(mean);
+      if (m_smcsamplers_prior) {
+	likelihood = alternate_likelihood(cp, m_end_of_int_changepoint);
+      } else {
+	likelihood = m_pm->log_likelihood_interval(cp, m_end_of_int_changepoint, cpintercept);
+      }
+      cp->setlikelihood(likelihood);
       m_sample[i]->add_component(cp, ncps-1);
       changepoints.clear();
     } else {
       if (previous_sample) {
 	int dim = previous_sample[i]->get_dim_theta();
-	double mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
-	cpintercept->setmeanvalue(mean);
+	mean = previous_sample[i]->get_theta_component(dim - 1)->getmeanvalue();
+	
       } else {
-	cpintercept->setmeanvalue(sample_mean(NULL));
+	if (!m_smcsamplers_prior) {
+	  mean = m_pm->calculate_mean(cpintercept, m_end_of_int_changepoint, NULL);
+	} else {
+	  mean = sample_mean(NULL);
+	}
       }
-      cpintercept->setlikelihood(alternate_likelihood(cpintercept, m_end_of_int_changepoint));
+      cpintercept->setmeanvalue(mean);
+      if (m_smcsamplers_prior) {
+	likelihood = alternate_likelihood(cpintercept, m_end_of_int_changepoint);
+      } else {
+	likelihood = m_pm->log_likelihood_interval(cpintercept, m_end_of_int_changepoint, NULL);
+      }
+      cpintercept->setlikelihood(likelihood);
     }	
   }    
 
 }
-
-/*void rejection_sampling::sample_from_prior() {
-  int ncps;
-  double length_of_interval = m_end_time - m_cp_start;
-  changepoint *cpintercept = NULL;
-  changepoint *cp = NULL, *cp1 = NULL; 
-  unsigned long long int data_index_start = m_pm->get_data()->find_data_index(m_cp_start);
-//cout << current_likelihood << " " << data_index_end << " " << data_index_start << " " << m_start_time << " " << m_end_time;
-  m_sample = new Particle<changepoint> *[m_sample_size];
-
-  for (int i = 0; i < m_sample_size; i++) {
-    ncps = gsl_ran_poisson(m_r, m_cp_prior * length_of_interval);
-    cpintercept = new changepoint(m_cp_start, data_index_start, 0, 0);
-    m_sample[i] = new Particle<changepoint>(0, NULL, cpintercept);
-    if (ncps > 0) {
-      vector<double> changepoints (ncps);
-      for (int j = 0; j < ncps; j++) {
-	changepoints[j] = gsl_ran_flat(m_r, m_cp_start, m_end_time);
-      }
-      sort(changepoints.begin(), changepoints.end());
-      cp = new changepoint(changepoints[0], 0, 0, 0);
-      m_pm->set_data_index(cp, 0, cpintercept);
-      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, cp, NULL));
-      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, cp, NULL));	
-      for (int j = 0; j < ncps - 1; j++) {
-	cp1 = new changepoint(changepoints[j + 1], 0, 0, 0);
-	m_pm->set_data_index(cp1, 0, cp);
-	cp->setlikelihood(m_pm->log_likelihood_interval(cp, cp1, cpintercept));
-	if (m_calculate_mean) {
-	  cp->setmeanvalue(m_pm->calculate_mean(cp, cp1, cpintercept));
-	}
-	m_sample[i]->add_component(cp, j);
-	cpintercept = cp;
-	cp = cp1;
-      }
-      cp->setlikelihood(m_pm->log_likelihood_interval(cp, m_end_of_int_changepoint, cpintercept));
-      if (m_calculate_mean) {
-	cp->setmeanvalue(m_pm->calculate_mean(cp, m_end_of_int_changepoint, cpintercept));
-      }
-      m_sample[i]->add_component(cp, ncps-1);
-      changepoints.clear();
-    } else {
-      cpintercept->setlikelihood(m_pm->log_likelihood_interval(cpintercept, m_end_of_int_changepoint, NULL));
-      cpintercept->setmeanvalue(m_pm->calculate_mean(cpintercept, m_end_of_int_changepoint, NULL));
-    }	
-  }    
-
-
-  }*/
 
 void
 rejection_sampling::run_simulation() {

@@ -183,7 +183,7 @@ void SMC_PP_MCMC::initialise_function_of_interest(int grid, bool g, bool prob, b
   for(int ds=0; ds<m_num; ds++){
     m_functionofinterest[ds] = new Function_of_Interest(m_length_grid,m_start,m_end,m_nu,g,prob,m_calculate_intensity,1,sequential,m_num_of_intervals,instant,delta);
     
-    if (m_importance_sampling) {
+    if (m_importance_sampling && !m_sample_from_prior) {
       m_functionofinterest[ds]->set_importance_sampling();
     }
   }
@@ -362,6 +362,9 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	    m_rejection_sampling[ds]->run_simulation();
 	    m_rejection_sampling_acceptance_rate[ds][iters] = m_rejection_sampling[ds]->m_acceptance_rate;
 	  } else {
+	    if (m_importance_sampling) {
+	      m_rejection_sampling[ds]->use_smcsamplers_prior();
+	    }
 	    if (start == m_start) {
 	      m_rejection_sampling[ds]->sample_from_prior(NULL);
 	    } else {

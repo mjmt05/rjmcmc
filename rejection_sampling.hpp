@@ -19,7 +19,7 @@ public:
   Particle<changepoint>** get_sample() {return m_sample;}
   void write_frequency_counts_to_file(const char*);
   double m_acceptance_rate;
-
+  void use_smcsamplers_prior() {m_smcsamplers_prior = 1;}
 
 private:
   
@@ -44,6 +44,7 @@ private:
   changepoint *m_end_of_int_changepoint;
   double sample_mean(changepoint *);
   double alternate_likelihood(changepoint *, changepoint *);
+  bool m_smcsamplers_prior;
 };
 
 

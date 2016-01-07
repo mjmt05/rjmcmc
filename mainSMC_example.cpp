@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   if (o.m_model == "ur" || o.m_model == "pregression") {
     o.m_start=0;
     o.m_end=dataobj? dataobj->get_cols():dataobj_int->get_cols();
-    cout << o.m_end << endl;
+    //    cout << o.m_end << endl;
   }
   probability_model * ppptr = NULL;
   
@@ -50,15 +50,18 @@ int main(int argc, char *argv[])
     //static_cast<pp_model*>(ppptr)->use_alternative_gamma_prior();
     if (o.m_importance_sampling) {
       ppptr->use_random_mean(o.m_seed);
-      /*if (sample_from_prior) {
-	ppptr->use_prior_mean();
-`	}*/
+      if (sample_from_prior) {
+       ppptr->use_prior_mean();
+      }
     }
    
   } else if (o.m_model == "ur") {
     ppptr = new ur_model(o.m_gamma_prior_1,o.m_gamma_prior_2,o.m_v,dataobj);
     if(estimate_var_in_ur)
       static_cast<ur_model*>(ppptr)->estimate_variance();
+    if (sample_from_prior) {
+      ppptr->use_random_mean(o.m_seed);
+    }
   } else if (o.m_model == "pregression") {
     ppptr = new pp_model(dataobj_int,NULL,o.m_gamma_prior_1,o.m_gamma_prior_2);
   } else {
@@ -97,14 +100,14 @@ int main(int argc, char *argv[])
     SMCobj.do_importance_sampling();
   }
 
-  if(o.m_calculate_filtering_mean){
-    SMCobj.initialise_function_of_interest(o.m_grid,0,0);
-  }
-
   if (sample_from_prior) {
     SMCobj.sample_from_prior();
   }
 
+  if(o.m_calculate_filtering_mean){
+    SMCobj.initialise_function_of_interest(o.m_grid,0,0);
+  }
+ 
   if(!(o.m_disallow_empty_intervals_between_cps || o.m_model == "sncp")){
     SMCobj.set_neighbouring_intervals(1);
   }
