@@ -14,6 +14,7 @@ struct option ArgumentOptionsSMC::lopts[] = {
     {"cpprior", required_argument, NULL, 'n'},
     {"modelprior1", required_argument, NULL, 'a'},
     {"modelprior2", required_argument, NULL, 'b'},
+    {"modelpriorur", required_argument, NULL, 'A'},
     {"seed", required_argument, NULL, 's'},
     {"mean", no_argument, NULL, 'l'},
     {"grid", required_argument, NULL, 'g'},
@@ -38,6 +39,7 @@ ArgumentOptionsSMC::ArgumentOptionsSMC(){
   m_cp_prior = 2/(double)112;
   m_gamma_prior_1 = 0.1;
   m_gamma_prior_2 = 0.1;
+  m_v = 10;
   srand (time(NULL));
   m_seed = rand() % 10000;
   m_calculate_filtering_mean = 1;
@@ -83,6 +85,9 @@ void ArgumentOptionsSMC::parse(int argc, char * argv[]){
       break;
     case 'b':
       m_gamma_prior_2 = stringtodouble(optarg,opt);
+      break;
+    case 'A':
+      m_v = stringtodouble(optarg,opt);
       break;
     case 's':
       m_seed = stringtolong(optarg,opt);
@@ -152,22 +157,28 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << endl;
   cerr << "Usage: " << programname <<  " [OPTIONS] DATAFILE STARTTIME ENDTIME" << endl;
   cerr << endl;
-  cerr << "-h | --help            print this text and exit" << endl;
-  cerr << "-i | --intervals       number of sequential time intervals (default = " << m_num_intervals << ")" << endl;
-  cerr << "-p | --particles       number of particles (default = " << m_particles << ")" << endl;
-  cerr << "-f | --essthreshold    the threshold at which to resample the particles as a percentage (default = " << m_ESS_threshold << ")" << endl;
-  cerr << "-c | --model           can either be sncp (shot noise cox process) or poisson (poisson process) (default = " << m_model << ")" << endl;
-  cerr << "-n | --cpprior         the Poisson process prior parameter for the changepoints (default = " << m_cp_prior << ")" << endl;
-  cerr << "-a | --modelprior1     prior parameter 1 (dependent on model), see documentation (default = " << m_gamma_prior_1 << ")" << endl;
-  cerr << "-b | --modelprior2     prior parameter 2 (dependent on model), see documentation (default = " << m_gamma_prior_2 << ")" << endl;
-  cerr << "-s | --seed            set the seed for generating random variables (default = current time)" << endl;
-  cerr << "-l | --mean            calculate the filtering estimate of the mean over --grid, no argument required (default = " << m_calculate_filtering_mean << ")" << endl;
-  cerr << "-g | --grid            the number of grid points over which to calculate the mean must be a multiple of intervals (default = END)" << endl;
-  cerr << "-v | --writecps        write changepoints, intensity, and weights at the final time point, no argument required (default = " << m_write_cps_to_file << ")" << endl;
-  cerr << "-w | --writeess        write ESS to file (default = " << m_print_ESS << ")" << endl;
-  cerr << "-z | --importsampling  do importance sampling for the coal data, no argument required (default = " << m_importance_sampling << ")" << endl;
+  cerr << "-h | --help              print this text and exit" << endl;
+  cerr << "-i | --intervals         number of sequential time intervals (default = " << m_num_intervals << ")" << endl;
+  cerr << "-p | --particles         number of particles (default = " << m_particles << ")" << endl;
+  cerr << "-f | --essthreshold      the threshold at which to resample the particles as a percentage (default = " << m_ESS_threshold << ")" << endl;
+  cerr << "-c | --model             can either be sncp (shot noise cox process), poisson (poisson process)," << endl;
+  cerr << "                         pregression (poisson regression) or ur (univariate regression) (default = " << m_model << ")" << endl;
+  cerr << "-n | --cpprior           the Poisson process prior parameter for the changepoints (default = " << m_cp_prior << ")" << endl;
+  cerr << "-a | --modelprior1       prior parameter 1 (dependent on model), see documentation (default = " << m_gamma_prior_1 << ")" << endl;
+  cerr << "-b | --modelprior2       prior parameter 2 (dependent on model), see documentation (default = " << m_gamma_prior_2 << ")" << endl;
+  cerr << "-A | --modelpriorur      regressor prior variance parameter for univariate regression (default = " << m_v << ")" << endl;
+  cerr << "-s | --seed              set the seed for generating random variables (default = current time)" << endl;
+  cerr << "-l | --mean              calculate the filtering estimate of the mean over --grid," << endl;
+  cerr << "                         no argument required (default = " << m_calculate_filtering_mean << ")" << endl;
+  cerr << "-g | --grid              the number of grid points over which to calculate the mean" << endl;
+  cerr << "                         must be a multiple of intervals (default = END)" << endl;
+  cerr << "-v | --writecps          write changepoints, intensity, and weights at the final time point," << endl;
+  cerr << "                         no argument required (default = " << m_write_cps_to_file << ")" << endl;
+  cerr << "-w | --writeess          write ESS to file (default = " << m_print_ESS << ")" << endl;
+  cerr << "-z | --importsampling    do importance sampling for the coal data, no argument required (default = " << m_importance_sampling << ")" << endl;
   cerr << "-P | --spacingprior      use spacing prior for the coal data, no argument required (default = " << m_spacing_prior << ")" << endl;
-  cerr << "-r | --rejectionsampling use rejection sampling rather than mcmc for the coal data, no argument required (default = " << m_rejection_sampling << ")" << endl;
+  cerr << "-r | --rejectionsampling use rejection sampling rather than mcmc for the coal data," << endl;
+  cerr << "                         no argument required (default = " << m_rejection_sampling << ")" << endl;
  
   cerr << endl;
   cerr << "Optional parameters to set when using RJ to sample on each interval" << endl;
@@ -187,6 +198,10 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
 
   cerr << "Example: Poisson process" << endl;
   cerr << programname << " --intervals 112 --grid 112 --cpprior $(echo '2.0/112.0' | bc -l) --essthreshold 0.3 --writeess --mean -z coal_data_renormalised.txt 0 112" << endl;
+  cerr << endl;
+
+   cerr << "Example: Univariate regression" << endl;
+  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/5000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 0" << endl;
   exit(status);
 
 }

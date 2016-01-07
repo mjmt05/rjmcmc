@@ -309,6 +309,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  }
 	}
 	if (!m_do_exact_sampling) {
+
 	  m_rj_B[ds] = new rj_pp((double)(start-avg_distance), (double)end, sample_size, max_theta ,move_width, m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,m_discrete,m_variable_B,NULL,(int)seed*(iters+1),true);
 	  
 	  if(!m_conjugate){
@@ -486,7 +487,7 @@ void SMC_PP_MCMC::resample_particles(double start, double end, int num, const ch
     double move_width=m_move_width;
     double normal_pars[2] = {start,(end-start)/3};
 
-    rj_pp * rj_pp_obj = new rj_pp(start,end,num,10000,move_width,m_nu,m_var_nu,m_pm[ds],1,0,0,0,NULL,seed*(iters+1),true);
+    rj_pp * rj_pp_obj = new rj_pp(start,end,num,10000,move_width,m_nu,m_var_nu,m_pm[ds],1,0,m_discrete,0,NULL,seed*(iters+1),true);
 
     if(m_proposal_type && m_vec_proposal_type){
       if(strcmp(m_proposal_type,"Histogram")==0){
@@ -802,6 +803,7 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	  }
         
 	  incremental_weight += likelihood_joint-likelihood_left-likelihood_right+prior_term;
+
 	} else {
 	  incremental_weight += m_sample_B[ds][index_B]->get_theta_component(-1)->getlikelihood();
 	  for (int i = 0; i < dim1; i++) {
@@ -825,7 +827,7 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	m_num_zero_weights[ds][iter]++;
       }
       
-      
+
       m_sample_dummy[ds][index_new]->set_log_posterior((double)m_sample_dummy[ds][index_new]->get_log_posterior() + (double)incremental_weight);
 
       if(index_new!=(ratio-1)){

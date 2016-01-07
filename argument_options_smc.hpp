@@ -38,7 +38,7 @@ class ArgumentOptionsSMC{
   bool m_importance_sampling;
   bool m_rejection_sampling;
   bool m_spacing_prior;
-
+  double m_v;
   /*RJ paramters when sampling on the intervals over time*/
   int m_burnin;
   int m_thinning;

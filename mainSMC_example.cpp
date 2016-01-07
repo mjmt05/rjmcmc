@@ -9,6 +9,7 @@
 #include "probability_model.hpp"
 #include "SNCP.hpp"
 #include "function_of_interest.hpp"
+#include "Univariate_regression_model.hpp"
 using namespace std;
 
 
@@ -17,9 +18,19 @@ int main(int argc, char *argv[])
   ArgumentOptionsSMC o = ArgumentOptionsSMC();
   o.parse(argc,argv);
 
-  Data<double> * dataobj = new Data<double>(o.m_datafile,false);
+  
+  Data<unsigned long long int> * dataobj_int = NULL;
+  Data<double> * dataobj = NULL;
+  if (o.m_model == "pregression") {
+    dataobj_int = new Data<unsigned long long int>(o.m_datafile,false);
+  } else {
+    dataobj = new Data<double>(o.m_datafile,false);
+  }
 
-
+  if (o.m_model == "ur") {
+    o.m_start=0;
+    o.m_end=dataobj->get_cols();
+  }
   probability_model * ppptr = NULL;
   
   cout << "seed " << o.m_seed << endl;
@@ -42,7 +53,11 @@ int main(int argc, char *argv[])
 `	}*/
     }
    
-  }else{
+  } else if (o.m_model == "ur") {
+    ppptr = new ur_model(o.m_gamma_prior_1,o.m_gamma_prior_2,o.m_v,dataobj);
+  } else if (o.m_model == "pregression") {
+    ppptr = new pp_model(dataobj_int,NULL,o.m_gamma_prior_1,o.m_gamma_prior_2);
+  } else {
     ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
   }
 
@@ -70,7 +85,9 @@ int main(int argc, char *argv[])
     SMCobj.use_spacing_prior();
   }
 
-
+  if (o.m_model == "ur") {
+    SMCobj.set_discrete_model();
+  }
 
   if(o.m_importance_sampling && o.m_model != "sncp"){
     SMCobj.do_importance_sampling();

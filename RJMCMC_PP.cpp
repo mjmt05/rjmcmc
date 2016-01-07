@@ -102,7 +102,7 @@ changepoint* rj_pp::generate_new_parameter()const {
     bool alreadyexists = true;
     cpobj = new changepoint(0, 0);
     while (alreadyexists) {
-      new_value = gsl_rng_uniform_int(r, m_end_time - 1) + 1;
+      new_value = gsl_rng_uniform_int(r, m_end_time - m_start_cps - 1) + 1 + m_start_cps;
       cpobj -> setchangepoint(new_value);
       alreadyexists = m_current_particle->does_particle_exist(cpobj);
     }
