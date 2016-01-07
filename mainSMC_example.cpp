@@ -27,9 +27,10 @@ int main(int argc, char *argv[])
     dataobj = new Data<double>(o.m_datafile,false);
   }
 
-  if (o.m_model == "ur") {
+  if (o.m_model == "ur" || o.m_model == "pregression") {
     o.m_start=0;
-    o.m_end=dataobj->get_cols();
+    o.m_end=dataobj? dataobj->get_cols():dataobj_int->get_cols();
+    cout << o.m_end << endl;
   }
   probability_model * ppptr = NULL;
   
@@ -157,8 +158,10 @@ int main(int argc, char *argv[])
   if(o.m_print_ESS){
     SMCobj.print_ESS(0,"ess.txt");
   }
-  
-  delete dataobj;
+  if (dataobj)
+    delete dataobj;
+  //  if (dataobj_int)
+  //    delete dataobj_int;
   delete ppptr;  
   return(0);
 }
