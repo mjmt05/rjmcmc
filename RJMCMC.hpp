@@ -58,6 +58,7 @@ template< class T>
   virtual double get_end_time() const {return m_end_time;}
   virtual void set_initial_sample(Particle<T> * initial) {m_initial_sample = initial;}
   virtual void calculate_function_of_interest() = 0;
+  virtual double particle_component_distance(){return DBL_MAX;}
   void open_sample_stream();
   void print_sample();
   void open_size_of_sample_stream();

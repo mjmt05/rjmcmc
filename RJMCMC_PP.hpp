@@ -63,7 +63,7 @@ class rj_pp : public rj<changepoint>{
   void initialise_function_of_interest(int,bool=1,bool=1,bool=0,double=0);
   void proposal_type(const char * , void *);
   void set_discrete(bool d){m_discrete=d;}
-  void set_spacing_prior() {m_spacing_prior = m_random_nu?false:true;}
+  void set_spacing_prior(double space=1.0) {m_spacing_prior = !m_random_nu; m_space = space;}
 
   private:
   double m_move_tolerance;
@@ -82,6 +82,7 @@ class rj_pp : public rj<changepoint>{
   double m_nu, m_log_nu;//fixed paramater nu for PP prior on changepoints.
   bool m_random_nu;//if true, nu~Gamma(alpha_nu,beta_nu).
   bool m_spacing_prior;
+  double m_space;//corresponding space for spacing prior
   double m_alpha_nu, m_beta_nu;//gamma hyperparamaters for unknown nu for PP prior on changepoints.
   bool m_discrete;
      

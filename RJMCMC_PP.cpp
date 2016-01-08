@@ -47,7 +47,8 @@ rj_pp::~rj_pp(){
 }
 
 void rj_pp::rj_pp_construct(){
-  m_spacing_prior = 0;
+  m_spacing_prior = false;
+  m_space = 1;
   m_no_neighbouring_empty_intervals = false;
   m_prop_distribution = 'U';
   m_prop_histogram=NULL;
@@ -158,9 +159,14 @@ changepoint* rj_pp::generate_new_parameter()const {
 double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
     
     int k = m_current_particle->get_dim_theta();
+    if(m_spacing_prior && k>0){
+      if(position<k && m_current_particle->get_theta_component(position)->getchangepoint()-new_value->getchangepoint()<m_space)//check cp to the right
+	return -DBL_MAX;
+      else if(position>0 && new_value->getchangepoint()-m_current_particle->get_theta_component(position-1)->getchangepoint()<m_space)//check cp to the left
+	return -DBL_MAX;
+    }
 
     changepoint *cpobj_right;
-
     if (position == k){
       cpobj_right = m_end_of_int_changepoint;
       if(!m_conjugate)
@@ -359,8 +365,9 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
     changepoint *cpobj_left = m_current_particle->get_theta_component(k-1);
     changepoint *cpobj_move = m_current_particle->get_theta_component(k);
     changepoint *cpobj_right;
+    unsigned int dim = m_current_particle->get_dim_theta();
 
-    if (k == m_current_particle->get_dim_theta()-1){
+    if (k == dim-1){
         cpobj_right = m_end_of_int_changepoint;
 	if(!m_conjugate)
 	  m_pm->propose_new_parameters(m_current_particle,k,2,new_theta,m_end_of_int_changepoint);
@@ -371,6 +378,14 @@ double rj_pp::log_likelihood_ratio_move(changepoint * new_theta, unsigned int k)
 	  m_pm->propose_new_parameters(m_current_particle,k,2,new_theta,NULL);
     }
 
+    if(m_spacing_prior && dim>0){
+      if(k<dim-1 && cpobj_right->getchangepoint()-new_theta->getchangepoint()<m_space)//check cp to the right
+	return -DBL_MAX;
+      else if(k>0 && new_theta->getchangepoint()-cpobj_left->getchangepoint()<m_space)//check cp to the left
+	return -DBL_MAX;
+    }
+    
+    
     /* if discrete check to make sure no empty intervals*/  
     /*if(m_discrete){
       long long int r=cpobj_right->getdataindex();
@@ -437,7 +452,8 @@ double rj_pp::log_prior_ratio_birth(changepoint *newtheta) const{
 
  if(!m_random_nu) {
    if (m_spacing_prior) {
-     prior = m_nu * (m_end_time - newtheta->getchangepoint());
+     double distance_to_end=m_end_time - newtheta->getchangepoint();
+     prior = m_nu * (distance_to_end<m_space?distance_to_end:m_space);
    }
    return (prior+m_log_nu);
  }
@@ -455,7 +471,8 @@ double rj_pp::log_prior_ratio_death(unsigned int thetadelete) const{
     prior=m_pm->calculate_prior_ratio(m_current_particle,1);
   if(!m_random_nu){
     if (m_spacing_prior) {
-      prior = m_nu * (m_current_particle->get_theta_component(thetadelete)->getchangepoint() - m_end_time);
+      double distance_to_end=m_end_time-m_current_particle->get_theta_component(thetadelete)->getchangepoint();
+      prior = -m_nu * (distance_to_end<m_space?distance_to_end:m_space);
     }
     return (prior-m_log_nu);
   }
@@ -467,8 +484,11 @@ double rj_pp::log_prior_ratio_move(changepoint *newposition, unsigned int change
   if(!m_conjugate)
     prior=m_pm->calculate_prior_ratio(m_current_particle,2);  
   if (m_spacing_prior) {
-    prior = m_nu * (m_current_particle->get_theta_component(changepointmove)->getchangepoint()
-		    - newposition->getchangepoint());
+    double old_distance_to_end=m_end_time-m_current_particle->get_theta_component(changepointmove)->getchangepoint();
+    double old_space=old_distance_to_end<m_space?old_distance_to_end:m_space;
+    double new_distance_to_end=m_end_time-newposition->getchangepoint();
+    double new_space=new_distance_to_end<m_space?new_distance_to_end:m_space;
+    prior = m_nu * (new_space-old_space);
   }
   return (0+prior);
 }

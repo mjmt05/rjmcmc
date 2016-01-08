@@ -162,8 +162,9 @@ void SMC_PP_MCMC::set_RJ_parameters(int t, int b, double mw, const char *proposa
   }
 }
 
-void SMC_PP_MCMC::use_spacing_prior() {
+void SMC_PP_MCMC::use_spacing_prior(double space) {
   m_use_spacing_prior = true;
+  m_spacing_prior=space>0?space:m_change_in_time;
   m_num_zero_weights = new unsigned int *[m_num];
   m_num_zero_weights[0] = new unsigned int[m_num * m_num_of_intervals];
   for (int i = 1; i < m_num; i++) {
@@ -303,7 +304,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	unsigned int max_theta = UINT_MAX;
 	m_cp_start = start;
 	if (m_use_spacing_prior && !m_sample_from_prior) {
-	  max_theta = 1;
+	  max_theta = static_cast<int>(m_change_in_time/m_spacing_prior);
 	  if (start > m_start) {
 	    m_cp_start = max(m_functionofinterest[ds]->get_min_distance() + m_spacing_prior, start);
 	  }

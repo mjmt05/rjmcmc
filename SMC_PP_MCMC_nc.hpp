@@ -47,7 +47,7 @@ public:
     void set_variable_parameters(Divergence_Type dt, Loss_Function lt, int nb,int ii, long long int mll, int fg=0){m_divergence_type=dt; m_loss_type=lt, m_num_of_bins=nb; m_initial_iterations=ii; m_max_lookup_length=mll;m_foi_grid=fg;}
     void set_proposal_prior(double pp){m_proposal_prior=pp; m_prior_diff=log(m_nu)-log(pp);}
     void non_conjugate(){m_conjugate=0;}
-    void use_spacing_prior();
+    void use_spacing_prior(double space=0);
     void print_zero_weights(int, const char *);
     void print_rejection_sampling_acceptance_rates(int, const char *);
   void sample_intensities(Particle<changepoint> **, double, unsigned int, int);
