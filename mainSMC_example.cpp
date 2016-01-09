@@ -33,14 +33,13 @@ int main(int argc, char *argv[])
     //    cout << o.m_end << endl;
   }
   probability_model * ppptr = NULL;
-  
   cout << "seed " << o.m_seed << endl;
 
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
   bool dovariable = 0; //for doing a variable sample size approach
   unsigned int num_proposal_histgoram_bins = 40000/o.m_num_intervals; //number of proposal histogram bins for proposing changepoints in the the sncp model
   unsigned int number_of_data_processes = 1;
-  bool only_do_mcmc = false; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
+  bool only_do_mcmc = true; //when doing SMC repeatedly do MCMC on the intervals [t_0,t_i]
   bool calculate_online_estimate_number_of_cps = true;
   bool sample_from_prior = false;
   bool estimate_var_in_ur = false;

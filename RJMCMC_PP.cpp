@@ -157,7 +157,7 @@ changepoint* rj_pp::generate_new_parameter()const {
 
 
 double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
-    
+
     int k = m_current_particle->get_dim_theta();
     if(m_spacing_prior && k>0){
       if(position<k && m_current_particle->get_theta_component(position)->getchangepoint()-new_value->getchangepoint()<m_space)//check cp to the right

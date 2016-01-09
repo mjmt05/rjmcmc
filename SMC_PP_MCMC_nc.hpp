@@ -97,7 +97,7 @@ private:
   bool m_discrete;
        
  
-        void increase_vector(int);
+  void increase_vector(int, unsigned long long int);
 	static bool MyDataSort(const pair<double,int>&, const pair<double,int>&);
 
 };

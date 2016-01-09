@@ -247,14 +247,22 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       else{
 	tempparticle=NULL;
       }
-      m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], 100000, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,m_discrete,0,tempparticle,(int)(seed*(iters+1)),true);
+      unsigned int max_theta = UINT_MAX;
+      if (m_use_spacing_prior && !m_sample_from_prior) {
+	max_theta = static_cast<int>((end-start)/m_spacing_prior);
+      }
+
+      m_rj_A[ds] = new rj_pp(start, end, m_sample_size_A[ds], max_theta, move_width , m_nu, m_var_nu, m_pm[ds],m_thin,m_burnin,m_discrete,0,tempparticle,(int)(seed*(iters+1)),true);
       if(m_proposal_type && m_vec_proposal_type){
 	if(strcmp(m_proposal_type,"Histogram")==0){
 	  int temp=(((unsigned int*)m_vec_proposal_type)[0])*(iters+1);
 	  m_rj_A[ds]->proposal_type(m_proposal_type,(void*)(&temp));
 	}
       }
-     
+      if (m_use_spacing_prior) {
+	m_rj_A[ds]->set_spacing_prior(m_spacing_prior);
+      }
+
       if(!m_conjugate)
 	m_rj_A[ds]->non_conjugate();
       if(m_calculate_intensity && !m_importance_sampling)
@@ -263,7 +271,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	m_rj_A[ds]->allow_neighbouring_empty_intervals();
       else
 	m_rj_A[ds]->disallow_neighbouring_empty_intervals();
-     
+
       m_rj_A[ds]->runsimulation();
       m_sample_A[ds] = m_rj_A[ds]->get_sample();
       if (m_importance_sampling) {
@@ -321,7 +329,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  }
 	  m_rj_B[ds]->set_start_cps(m_cp_start);
 	  if (m_use_spacing_prior) {
-	    m_rj_B[ds]->set_spacing_prior();
+	    m_rj_B[ds]->set_spacing_prior(m_spacing_prior);
 	  }
 	  if(m_proposal_type && m_vec_proposal_type){
 	    m_rj_B[ds]->proposal_type(m_proposal_type,m_vec_proposal_type);
@@ -399,7 +407,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
     for(int ds=0; ds<m_num; ds++){
       if(m_process_observed[ds]==1){
 	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {
-	  increase_vector(ds);
+	  increase_vector(ds, m_rj_B[ds]->get_size_sample());
 	}  
 	m_sample_size_A[ds]=m_rj_B[ds]->get_size_sample();
 	if(m_store_sample_sizes)
@@ -408,7 +416,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  m_min_sample_size[ds]=m_sample_size_A[ds];
       }else if(m_process_observed[ds]>1){
 	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {
-	  increase_vector(ds);
+	  increase_vector(ds, m_rj_B[ds]->get_size_sample());
 	}
 	m_sample_size_B[ds]=m_rj_B[ds]->get_size_sample();
 	if(m_store_sample_sizes)
@@ -442,8 +450,8 @@ void SMC_PP_MCMC::sample_intensities(Particle<changepoint> ** sample, double end
   }
 }
 
-void SMC_PP_MCMC::increase_vector(int ds) {
-  unsigned long long int size = m_current_sample_size[ds] * 2;
+void SMC_PP_MCMC::increase_vector(int ds, unsigned long long int sample_size) {
+  unsigned long long int size =max( m_current_sample_size[ds] * 2, sample_size);
   unsigned long long int j;
   m_current_sample_size[ds] = size;
   if (m_process_observed[ds] > 1) {
@@ -478,12 +486,16 @@ void SMC_PP_MCMC::increase_vector(int ds) {
   }
   delete [] m_weights[ds];
   m_weights[ds] = new double[size];
-
+ 
   if (m_process_observed[ds] > 1) {
     for (unsigned int i = 0; i < m_sample_size_A[ds]; i++) {
       m_weights[ds][i] = weightstemp[i];
     }
     delete [] weightstemp;
+  } else {
+    for (unsigned int i = 0; i < size; i++) {
+      m_weights[ds][i] = 0;
+    }
   }
 }
 
@@ -760,7 +772,7 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	likelihood_left = cpobjA->getlikelihood();
 	if (m_use_spacing_prior) {
 	  if (gt) {
-	    prior_term = clean_prior_term - m_nu * cpobjA->getchangepoint();
+	    prior_term = clean_prior_term + m_nu * cpobjA->getchangepoint();
 	  } else {
 	    prior_term = clean_prior_term - m_nu * min(m_spacing_prior, start - cpobjA->getchangepoint());
 	  }

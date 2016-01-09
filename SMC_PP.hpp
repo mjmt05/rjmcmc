@@ -225,7 +225,6 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
       for(unsigned int j=0; j<m_num_of_intervals; j++)
 	m_last_changepoint[i][j]=0;
   }else{m_last_changepoint=NULL;}
-    
 
 }
     
@@ -325,7 +324,6 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
     if(i>0 && MCMC_only==0 && !m_sample_from_prior){
       permute_sample();
     }
-
     if (!MCMC_only){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){
@@ -357,7 +355,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	  // cout<<"ESS: "<<ds<<" "<<i<<" "<<ESS[ds]<<endl;  
 	  ESS_resample_particles(m_start+m_change_in_time*(i+1),ds);
 	  ESS[ds]=calculate_ESS(ds);
-	  //resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
+	  resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
 	}
       }
     }
@@ -373,7 +371,6 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
-
     calculate_function_of_interest(m_start+m_change_in_time*(i),m_start+m_change_in_time*(i+1));
     if(m_online_num_changepoints){
       for(int ds=0; ds<m_num; ds++){
@@ -412,7 +409,6 @@ void SMC_PP<T>::permute_sample(){
 
 template<class T>
 double SMC_PP<T>::calculate_ESS(int ds){
-
     double weights_squared;
     double sum_weights_squared=0;
     double effectivess;
