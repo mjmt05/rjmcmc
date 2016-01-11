@@ -26,6 +26,8 @@ struct option ArgumentOptionsSMC::lopts[] = {
     {"importsampling", no_argument, NULL, 'z'},
     {"spacingprior", no_argument, NULL,  'P'},
     {"rejectionsampling", no_argument, NULL, 'r'},
+    {"sequentialmcmc", no_argument, NULL, 'S'},
+    {"priorproposal", no_argument, NULL, 'o'},
     {NULL, 0, NULL, 0}
 };
 
@@ -52,11 +54,13 @@ ArgumentOptionsSMC::ArgumentOptionsSMC(){
   m_importance_sampling = 0;
   m_rejection_sampling = 0;
   m_spacing_prior = 0;
+  m_smcmc=false;
+  m_prior_proposals=false;
 }
 
 void ArgumentOptionsSMC::parse(int argc, char * argv[]){
 
-   const char *sopts="hi:p:d:t:m:n:a:b:s:lg:evwc:f:zPr";
+   const char *sopts="hi:p:d:t:m:n:a:b:s:lg:evwc:f:zPrSo";
 
   //Parse arguments
   char opt;
@@ -122,6 +126,12 @@ void ArgumentOptionsSMC::parse(int argc, char * argv[]){
     case 'P':
       m_spacing_prior = 1;
       break;
+    case 'S':
+      m_smcmc = true;
+      break;
+    case 'o':
+      m_prior_proposals = true;
+      break;
     case 'h':
       usage(0,argv[0]);
       break;
@@ -179,6 +189,8 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << "-P | --spacingprior      use spacing prior for the coal data, no argument required (default = " << m_spacing_prior << ")" << endl;
   cerr << "-r | --rejectionsampling use rejection sampling rather than mcmc for the coal data," << endl;
   cerr << "                         no argument required (default = " << m_rejection_sampling << ")" << endl;
+  cerr << "-S | --sequentialmcmc    use full MCMC on the whole interval [0,t_i] at each update (default = " << m_smcmc << ")" << endl;
+  cerr << "-o | --priorproposal     make proposals from prior in each SMC update interval (default = " << m_prior_proposals << ")" << endl;
  
   cerr << endl;
   cerr << "Optional parameters to set when using RJ to sample on each interval" << endl;

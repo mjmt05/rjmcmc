@@ -44,6 +44,8 @@ class ArgumentOptionsSMC{
   int m_thinning;
   double m_move_width;
   bool m_disallow_empty_intervals_between_cps;
+  bool m_smcmc;
+  bool m_prior_proposals;
 
  private:
   void usage(int status, char *);
