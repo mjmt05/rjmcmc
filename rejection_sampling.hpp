@@ -11,7 +11,7 @@
 class rejection_sampling {
   
 public:
-  rejection_sampling(double m_start_time = 0, double m_cp_start = 0, double m_end_time = 1, long long int m_sample_size = 10, probability_model *m_pm = NULL,  double m_cp_prior = 1, int m_seed = 0, bool m_calculate_mean = 0, bool m_calculate_sample_histogram = false, unsigned int m_num_bins = 100);
+  rejection_sampling(double m_start_time = 0, double m_cp_start = 0, double m_end_time = 1, long long int m_sample_size = 10, probability_model *m_pm = NULL,  double m_cp_prior = 1, double space=0, int m_seed = 0, bool m_calculate_mean = 0, bool m_calculate_sample_histogram = false, unsigned int m_num_bins = 100);
   ~rejection_sampling();
   void write_1d_histogram_to_file(const string output_filename="1d_distribution.txt"){m_histogram->write_1d_histogram_to_file(output_filename);}
   void run_simulation();
@@ -45,6 +45,8 @@ private:
   double sample_mean(changepoint *);
   double alternate_likelihood(changepoint *, changepoint *);
   bool m_smcsamplers_prior;
+  bool m_spacing_prior;
+  double m_space;
 };
 
 

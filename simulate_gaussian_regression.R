@@ -1,0 +1,9 @@
+ndot=1000
+cps=c(.2*ndot,.3*ndot,.5*ndot,.7*ndot)+25
+dcps=diff(c(0,cps,ndot))
+means=c(-5,0,5,-1,2)
+sigmas=c(1,.5,2,2,1.5)
+e<-rnorm(ndot)
+x<-e*rep(sigmas,times=dcps)+rep(means,times=dcps)
+write(x,'ur.txt',ncolumn=1)#length(x))
+write(e^2,'ur_residuals.txt',ncolumn=1)#length(x))

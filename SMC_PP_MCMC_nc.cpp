@@ -365,7 +365,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	 
 	 
 	  m_rejection_sampling[ds] = new rejection_sampling((double)(start - avg_distance),  m_cp_start, (double) end, 
-							    sample_size, m_pm[ds], m_nu, (int) seed * (iters + 1),
+							    sample_size, m_pm[ds], m_nu, m_spacing_prior, (int) seed * (iters + 1),
 							    m_calculate_intensity);
 	  if (!m_sample_from_prior) {
 	    m_rejection_sampling[ds]->run_simulation();

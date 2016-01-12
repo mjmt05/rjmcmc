@@ -3,7 +3,7 @@
 #include "changepoint.hpp"
 #include "histogram_type.hpp"
 #include <vector>
-rejection_sampling::rejection_sampling(double start, double cp_start, double end, long long int sample_size, probability_model *pm, double cp_prior, int seed, bool calculate_mean, bool calculate_sample_histogram, unsigned int grid) {
+rejection_sampling::rejection_sampling(double start, double cp_start, double end, long long int sample_size, probability_model *pm, double cp_prior, double space, int seed, bool calculate_mean, bool calculate_sample_histogram, unsigned int grid) {
   m_smcsamplers_prior = 0;
   m_start_time = start;
   m_cp_start = cp_start;
@@ -11,6 +11,8 @@ rejection_sampling::rejection_sampling(double start, double cp_start, double end
   m_sample_size = sample_size;
   m_pm = pm;
   m_cp_prior = cp_prior;
+  m_space = space;
+  m_spacing_prior = m_space > 0;
   m_seed = seed;
   gsl_rng_env_setup();
   m_r_type = gsl_rng_default;
@@ -118,6 +120,8 @@ void rejection_sampling::sample_from_prior(Particle<changepoint> ** previous_sam
     m_sample[i] = new Particle<changepoint>(0, NULL, cpintercept);
 
     ncps = gsl_ran_poisson(m_r, m_cp_prior * length_of_interval);
+    if(m_spacing_prior && ncps>1)
+      ncps=1;
   
     if (ncps > 0) {
       vector<double> changepoints (ncps);

@@ -204,15 +204,23 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
  
   cerr << endl;
 
+  cerr << "Example: Poisson process, coal data" << endl;
+  cerr << programname << " --intervals 112 --grid 112 --cpprior $(echo '2.0/112.0' | bc -l) --essthreshold 0.3 --writeess --mean -z coal_data_renormalised.txt 0 112" << endl;
+  cerr << endl;
+
   cerr << "Example: shot noise cox process model" << endl;
   cerr << programname << " --model sncp --intervals 40 --particles 500 --movewidth 5 --cpprior .0025 --modelprior1 $(echo '2.0/3.0' | bc -l) --modelprior2 .01 --grid 1000 --essthreshold 0.4  --writeess -z  shot_noise.txt 0 2000" << endl;
   cerr << endl;
 
-  cerr << "Example: Poisson process" << endl;
-  cerr << programname << " --intervals 112 --grid 112 --cpprior $(echo '2.0/112.0' | bc -l) --essthreshold 0.3 --writeess --mean -z coal_data_renormalised.txt 0 112" << endl;
+  cerr << "Example: Poisson process, simulated data (first run the script simulate_poisson_process.R)" << endl;
+  cerr << programname << " --intervals 100 --grid 100 --cpprior 0.0001 --essthreshold 0.3 --writeess --mean -a 1 -b 0.01 -s 0 pp.txt 0 10000" << endl;
   cerr << endl;
 
-   cerr << "Example: Univariate regression" << endl;
+  cerr << "Example: Univariate regression (first run the script simulate_gaussian_regression.R)" << endl;
+  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/5000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 0" << endl;
+  cerr << endl;
+
+  cerr << "Example: Poisson regression  (first run the script simulate_poisson_regression.R)" << endl;
   cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/5000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 0" << endl;
   exit(status);
 
