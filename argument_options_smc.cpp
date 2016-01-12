@@ -60,7 +60,7 @@ ArgumentOptionsSMC::ArgumentOptionsSMC(){
 
 void ArgumentOptionsSMC::parse(int argc, char * argv[]){
 
-   const char *sopts="hi:p:d:t:m:n:a:b:s:lg:evwc:f:zPrSo";
+   const char *sopts="hi:p:d:t:m:n:a:b:A:s:lg:evwc:f:zPrSo";
 
   //Parse arguments
   char opt;

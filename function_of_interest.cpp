@@ -14,7 +14,7 @@ Function_of_Interest::Function_of_Interest(int grid,double start, double end, do
    m_variance_exp_last_changepoint=NULL;
    m_prob_function_of_interest=NULL;
    m_intensity=NULL;
-
+   
 
   m_start_of_sample=0;
 
@@ -235,7 +235,6 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
   else
     begin=interval_begin;
 
-  //    cout << sum_weights << endl;
   if(m_coal_importance_sampling && !m_fixed){
     Particle<changepoint> * temp;
     long double temp_weight;
