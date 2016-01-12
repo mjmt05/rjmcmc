@@ -217,11 +217,11 @@ void ArgumentOptionsSMC::usage(int status,char * programname){
   cerr << endl;
 
   cerr << "Example: Univariate regression (first run the script simulate_gaussian_regression.R)" << endl;
-  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/5000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 0" << endl;
+  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/1000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a 2 -b 2 ur.txt 0 1000" << endl;
   cerr << endl;
 
   cerr << "Example: Poisson regression  (first run the script simulate_poisson_regression.R)" << endl;
-  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/5000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 0" << endl;
+  cerr << programname << " --model ur --intervals 100 --grid 100 --cpprior $(echo '1.0/1000.0' | bc -l) --essthreshold 0.3 --writeess --mean -a .1 -b .1 ur.txt 0 1000" << endl;
   exit(status);
 
 }
