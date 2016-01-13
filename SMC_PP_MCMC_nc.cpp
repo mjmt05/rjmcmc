@@ -5,8 +5,8 @@
 
 bool SMC_PP_MCMC::MyDataSort(const pair<double,int>& lhs, const pair<double,int>& rhs){return (lhs.first > rhs.first);}
 
-SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int sizeA, int sizeB, double nu, double v_nu, probability_model ** pm,int num_data,bool varyB,bool intensity,bool dochangepoint,bool doMCMC, bool exact_sampling, int s)
-  :SMC_PP<changepoint>(start,end,intervals,sizeA,sizeB,num_data,varyB,dochangepoint,doMCMC,s),m_calculate_intensity(intensity), m_do_exact_sampling(exact_sampling)
+SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int sizeA, int sizeB, unsigned long long int** sizes, double nu, double v_nu, probability_model ** pm,int num_data,bool varyB,bool intensity,bool dochangepoint,bool doMCMC, bool exact_sampling, int s)
+  :SMC_PP<changepoint>(start,end,intervals,sizeA,sizeB,sizes,num_data,varyB,dochangepoint,doMCMC,s),m_calculate_intensity(intensity), m_do_exact_sampling(exact_sampling)
 {
   m_discrete = false;
   m_pm = pm;
@@ -67,8 +67,6 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
   else
     m_burnin=1000;
 
-  m_store_sample_sizes=0;
-  m_sample_sizes=NULL;
   if(m_variable_B){
     m_min_sample_size = new unsigned long long int[m_num]; 
     m_current_sample_size = new unsigned long long int[m_num];
@@ -130,12 +128,7 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
     delete [] m_current_sample_size;
     delete [] m_vec_KLS;
     delete [] m_min_sample_size;
-    if(m_store_sample_sizes){
-      delete [] m_sample_sizes[0];
-      delete [] m_sample_sizes;
-    }
   }
-
 }
 
 void SMC_PP_MCMC::set_RJ_parameters(int t, int b, double mw, const char *proposaltype, void * v){
@@ -207,26 +200,13 @@ void SMC_PP_MCMC::delete_samples(int ds){
    
 }
 
-void SMC_PP_MCMC::store_sample_sizes(){
-  m_store_sample_sizes=1;
-  m_sample_sizes = new unsigned long long int * [m_num];
-  m_sample_sizes[0] = new unsigned long long int[m_num*m_num_of_intervals];
-  for(int i=1; i<m_num; i++)
-    m_sample_sizes[i]=m_sample_sizes[i-1]+m_num_of_intervals;
-
-  for(int i=0; i<m_num; i++){
-    for(unsigned int j=0; j<m_num_of_intervals;j++)
-      m_sample_sizes[i][j]=0;
-  }
-}
-
 void SMC_PP_MCMC::sample_particles(double start, double end){
   
   long double avg_distance=0;
   //  double variance=0;
   double move_width=m_move_width;
   bool active=0;
-  unsigned long long int current_number=0; 
+  unsigned long long int current_number=0;
   
   Particle<changepoint> * tempparticle;      
   for(int ds=0; ds<m_num; ds++){
@@ -302,10 +282,13 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  avg_distance = 0;
 	}
 
-	unsigned long long int sample_size=0;
-
-	sample_size = m_max_sample_size_A;
-	if(!m_variable_B && m_process_observed[ds]>1){
+	unsigned long long int sample_size=m_max_sample_size_A;
+	if(m_sample_sizes){
+	  sample_size=m_sample_sizes[ds][m_interval];
+	  if(m_process_observed[ds]>1)
+	    m_sample_size_B[ds]=sample_size;
+	}
+	else if(!m_variable_B && m_process_observed[ds]>1){
 	  sample_size=m_max_sample_size_B;
 	}
 	
@@ -404,6 +387,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       current_number+=1;
       current_max=find_max(m_vec_KLS,m_num);
     }
+
     for(int ds=0; ds<m_num; ds++){
       if(m_process_observed[ds]==1){
 	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {

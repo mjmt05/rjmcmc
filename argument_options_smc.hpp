@@ -25,6 +25,7 @@ class ArgumentOptionsSMC{
   /*optional arguments*/
   int m_num_intervals;
   unsigned long int m_particles;
+  unsigned long long int** m_sample_sizes;
   double m_cp_prior;
   double m_gamma_prior_1;
   double m_gamma_prior_2;

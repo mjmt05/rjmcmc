@@ -41,6 +41,11 @@ int main(int argc, char *argv[])
   unsigned int number_of_data_processes = 1;
   bool calculate_online_estimate_number_of_cps = true;
   bool estimate_var_in_ur = false;
+  unsigned long long int* sample_sizes = NULL;
+  //  sample_sizes = new unsigned long long int[o.m_num_intervals];
+  //  for(unsigned int i=0;i<o.m_num_intervals;i++)
+  //    sample_sizes[i]=10000 - (i%2)*9500;
+  //  o.m_sample_sizes=&sample_sizes;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
@@ -83,7 +88,7 @@ int main(int argc, char *argv[])
   }
 
 
-  SMC_PP_MCMC SMCobj(o.m_start, o.m_end, o.m_num_intervals,o.m_particles,o.m_particles,o.m_cp_prior,variance_cp_prior,(probability_model**)&ppptr,number_of_data_processes,dovariable,o.m_calculate_filtering_mean,calculate_online_estimate_number_of_cps,o.m_smcmc, o.m_rejection_sampling, o.m_seed);
+  SMC_PP_MCMC SMCobj(o.m_start, o.m_end, o.m_num_intervals,o.m_particles,o.m_particles,o.m_sample_sizes,o.m_cp_prior,variance_cp_prior,(probability_model**)&ppptr,number_of_data_processes,dovariable,o.m_calculate_filtering_mean,calculate_online_estimate_number_of_cps,o.m_smcmc, o.m_rejection_sampling, o.m_seed);
 
   if (o.m_spacing_prior) {
     SMCobj.use_spacing_prior();
@@ -162,6 +167,8 @@ int main(int argc, char *argv[])
     delete dataobj;
   //  if (dataobj_int)
   //    delete dataobj_int;
+  if(sample_sizes)
+    delete sample_sizes;
   delete ppptr;  
   return(0);
 }

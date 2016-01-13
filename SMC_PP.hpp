@@ -22,7 +22,7 @@ class SMC_PP
 
 public:
 
-  SMC_PP(double = 0, double =1, unsigned int = 1, long long int = 0, unsigned int = 0, int=1,bool=0,bool=0,bool=0,int=0);
+  SMC_PP(double = 0, double =1, unsigned int = 1, long long int = 0, unsigned int = 0, unsigned long long int** = NULL, int=1,bool=0,bool=0,bool=0,int=0);
   virtual ~SMC_PP();
 
   virtual void sample_particles(double, double) = 0;
@@ -51,6 +51,7 @@ public:
   void swap( int & , int & );
   unsigned int return_num_ESS(){return m_num_ESS;} 
   void store_ESS();
+  void store_sample_sizes();
   void print_sample_birth_times(int);
   void print_size_sample_A(int ds);
   void sample_from_prior() {m_sample_from_prior = true;}
@@ -65,10 +66,13 @@ protected:
     double m_end;
     double m_change_in_time;
     unsigned int m_num_of_intervals;
+    unsigned int m_interval;
     unsigned long long int * m_sample_size_A;
     unsigned long long int m_max_sample_size_A;
     unsigned long long int m_max_sample_size_B;
     unsigned long long int * m_sample_size_B;
+    unsigned long long int ** m_sample_sizes;
+    bool m_store_sample_sizes;
     double ** m_weights;
     double ** m_exp_weights;
     const gsl_rng_type * r_type;
@@ -102,11 +106,15 @@ protected:
 
 };
 template<class T>
-SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
-:m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),m_online_last_changepoint(dochangepoint),MCMC_only(doMCMC),seed(s)
+SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long long int sizeA, unsigned int sizeB, unsigned long long int** sizes, int num_of_data_sets,bool varyB,bool dochangepoint,bool doMCMC, int s)
+  :m_start(start),m_end(end),m_num_of_intervals(num_of_intervals),m_max_sample_size_A(sizeA),m_max_sample_size_B(sizeB),m_sample_sizes(sizes),m_num(num_of_data_sets),m_variable_B(varyB),m_online_num_changepoints(dochangepoint),m_online_last_changepoint(dochangepoint),MCMC_only(doMCMC),seed(s)
 {
-
+  m_store_sample_sizes=false;
   m_importance_sampling = 0;
+  if(m_sample_sizes){
+    m_max_sample_size_A = m_sample_sizes[0][0];
+    m_max_sample_size_B = m_sample_sizes[0][1];
+  }
   long long int sample_size = m_max_sample_size_A;
   if (varyB) {
     sample_size /= m_num;
@@ -287,6 +295,10 @@ SMC_PP<T>::~SMC_PP(){
     delete [] m_ESS[0];
     delete [] m_ESS;
   }
+  if(m_store_sample_sizes){
+      delete [] m_sample_sizes[0];
+      delete [] m_sample_sizes;
+  }
 }
 
 template<class T>
@@ -301,6 +313,19 @@ void SMC_PP<T>::store_ESS(){
 }
 
 template<class T>
+void SMC_PP<T>::store_sample_sizes(){
+  m_store_sample_sizes=true;
+  m_sample_sizes = new unsigned long long int * [m_num];
+  m_sample_sizes[0] = new unsigned long long int[m_num*m_num_of_intervals];
+  for(int i=1; i<m_num; i++)
+    m_sample_sizes[i]=m_sample_sizes[i-1]+m_num_of_intervals;
+  for(int i=0; i<m_num; i++){
+    for(unsigned int j=0; j<m_num_of_intervals;j++)
+      m_sample_sizes[i][j]=0;
+  }
+}
+
+template<class T>
 void SMC_PP<T>::run_simulation_SMC_PP(){
 
   double * ESS;
@@ -310,24 +335,24 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
   BF = new double[m_num];
   old_sum_weights = new double[m_num];
    
-  for (unsigned int i = 0; i<m_num_of_intervals; i++){
-    iters=i;
+  for (m_interval = 0; m_interval<m_num_of_intervals; m_interval++){
+    iters=m_interval;
     for(int ds=0; ds<m_num; ds++){
       old_sum_weights[ds] = log(m_sum_exp_weights[ds]) +m_max_weight[ds];
     }
     if (MCMC_only){           
-      sample_particles(m_start,m_start+m_change_in_time*(i+1));
+      sample_particles(m_start,m_start+m_change_in_time*(m_interval+1));
     }
     else{
-      sample_particles(m_start+m_change_in_time*i,m_start+m_change_in_time*(i+1));
+      sample_particles(m_start+m_change_in_time*m_interval,m_start+m_change_in_time*(m_interval+1));
     }
-    if(i>0 && MCMC_only==0 && !m_sample_from_prior){
+    if(m_interval>0 && MCMC_only==0 && !m_sample_from_prior){
       permute_sample();
     }
     if (!MCMC_only){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){
-	  calculate_weights_join_particles(i,ds);
+	  calculate_weights_join_particles(m_interval,ds);
 	  if(m_process_observed[ds]>1){       
 	    delete_samples(ds);
 	  }
@@ -341,7 +366,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
       if (!MCMC_only){
 	ESS[ds]=calculate_ESS(ds);
 	if(m_store_ESS){
-	  m_ESS[ds][i] = ESS[ds];
+	  m_ESS[ds][m_interval] = ESS[m_interval];
 	}
 	/*BF[ds] = log(m_sum_exp_weights[ds]) + m_max_weight[ds]-old_sum_weights[ds];
      	  if (BF[ds] < log(0.1) && ESS[ds]>m_ESS_threshold){
@@ -352,10 +377,10 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 
 	if (ESS[ds]<m_ESS_threshold){
 	  m_num_ESS++;
-	  // cout<<"ESS: "<<ds<<" "<<i<<" "<<ESS[ds]<<endl;  
-	  ESS_resample_particles(m_start+m_change_in_time*(i+1),ds);
+	  // cout<<"ESS: "<<ds<<" "<<m_interval<<" "<<ESS[ds]<<endl;  
+	  ESS_resample_particles(m_start+m_change_in_time*(m_interval+1),ds);
 	  ESS[ds]=calculate_ESS(ds);
-	  resample_particles(m_start,m_start+m_change_in_time*(i+1),5,"Uniform",ds);
+	  resample_particles(m_start,m_start+m_change_in_time*(m_interval+1),5,"Uniform",ds);
 	}
       }
     }
@@ -371,14 +396,14 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
 	}
       }
     }
-    calculate_function_of_interest(m_start+m_change_in_time*(i),m_start+m_change_in_time*(i+1));
+    calculate_function_of_interest(m_start+m_change_in_time*(m_interval),m_start+m_change_in_time*(m_interval+1));
     if(m_online_num_changepoints){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){      
 	  for(unsigned long long int j=0; j<m_sample_size_A[ds]; j++){
-	    m_size_of_sample[ds][i]+=  m_sample_A[ds][j]->get_dim_theta()*m_exp_weights[ds][j];
+	    m_size_of_sample[ds][m_interval]+=  m_sample_A[ds][j]->get_dim_theta()*m_exp_weights[ds][j];
 	  }
-	  m_size_of_sample[ds][i]/=m_sum_exp_weights[ds];
+	  m_size_of_sample[ds][m_interval]/=m_sum_exp_weights[ds];
 	}
       }
     }
@@ -386,9 +411,9 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
       for(int ds=0; ds<m_num; ds++){
 	if(m_process_observed[ds]>0){      
 	  for(unsigned long long int j=0; j<m_sample_size_A[ds]; j++){
-	    m_last_changepoint[ds][i]+=  m_sample_A[ds][j]->get_last_theta_component()->getchangepoint()*m_exp_weights[ds][j];
+	    m_last_changepoint[ds][m_interval]+=  m_sample_A[ds][j]->get_last_theta_component()->getchangepoint()*m_exp_weights[ds][j];
 	  }
-	  m_last_changepoint[ds][i]/=m_sum_exp_weights[ds];
+	  m_last_changepoint[ds][m_interval]/=m_sum_exp_weights[ds];
 	}
       }
     }
