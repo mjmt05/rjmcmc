@@ -34,6 +34,7 @@ struct option ArgumentOptionsSMC::lopts[] = {
 
 ArgumentOptionsSMC::ArgumentOptionsSMC(){
   m_particles = 10000;
+  m_sample_sizes = NULL;
   m_num_intervals = 112;
   m_burnin = 1000;
   m_thinning = 10; 

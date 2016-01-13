@@ -14,7 +14,7 @@
 class SMC_PP_MCMC : public SMC_PP<changepoint>{
 public:
 
-  SMC_PP_MCMC(double = 0, double = 1, unsigned int = 1, int =0, int=0, double=1, double=0, probability_model ** =0,int=1, bool=0,bool=0, bool=0, bool=0, bool = 0, int=0);
+  SMC_PP_MCMC(double = 0, double = 1, unsigned int = 1, int =0, int=0, unsigned long long int** sizes=NULL ,double=1, double=0, probability_model ** =0,int=1, bool=0,bool=0, bool=0, bool=0, bool = 0, int=0);
     ~SMC_PP_MCMC();
     virtual void sample_particles(double, double);
     virtual void resample_particles(double,double,int, const char *,int);
@@ -32,7 +32,6 @@ public:
     void set_look_back(bool lb);
     void increase_A_particles(int,unsigned long long int, unsigned long long int *);
   
-    void store_sample_sizes();
     void print_variable_sample_sizes(const char *);
     /*always initialise function of interest before setting look back*/
     void initialise_function_of_interest(int, bool, bool, bool=0, double=0, bool=0);
@@ -67,8 +66,6 @@ private:
 	bool m_do_SMC_past;
 	int m_initial_iterations;
 	double * m_vec_KLS;
-	bool m_store_sample_sizes;
-	unsigned long long int ** m_sample_sizes;
 	unsigned long long int * m_min_sample_size;
         unsigned long long int * m_current_sample_size;
 	const char *m_proposal_type;
