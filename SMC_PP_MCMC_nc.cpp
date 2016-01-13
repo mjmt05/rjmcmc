@@ -284,7 +284,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	}
 
 	unsigned long long int sample_size=m_max_sample_size_A;
-	if(m_sample_sizes){
+	if(m_sample_sizes && !m_variable_B){
 	  sample_size=m_sample_sizes[ds][m_interval];
 	  if(m_process_observed[ds]>1)
 	    m_sample_size_B[ds]=sample_size;
