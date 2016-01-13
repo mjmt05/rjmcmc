@@ -113,7 +113,11 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
   m_importance_sampling = 0;
   if(m_sample_sizes){
     m_max_sample_size_A = m_sample_sizes[0][0];
-    m_max_sample_size_B = m_sample_sizes[0][1];
+    m_max_sample_size_B = 0;
+    for(unsigned int i=1; i<m_num_of_intervals; i++){
+      m_max_sample_size_A = max(m_max_sample_size_A,m_sample_sizes[0][i]);
+      m_max_sample_size_B = max(m_max_sample_size_B,m_sample_sizes[0][i]);
+    }
   }
   long long int sample_size = m_max_sample_size_A;
   if (varyB) {

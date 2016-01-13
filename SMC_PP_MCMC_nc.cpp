@@ -67,14 +67,15 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
   else
     m_burnin=1000;
 
-  if(m_variable_B){
+  if(m_sample_sizes||m_variable_B){
     m_min_sample_size = new unsigned long long int[m_num]; 
     m_current_sample_size = new unsigned long long int[m_num];
     for(int i=0; i<m_num; i++) {
       m_min_sample_size[i]=m_max_sample_size_A;
       m_current_sample_size[i] = m_max_sample_size_A / m_num;
     }
-    m_vec_KLS = new double[m_num];
+    if(m_variable_B)
+      m_vec_KLS = new double[m_num];
    
   }else{
     m_foi_grid=0;}
@@ -124,10 +125,13 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
     delete [] m_num_zero_weights;
   }
 
-  if(m_variable_B){
+  if(m_current_sample_size)
     delete [] m_current_sample_size;
-    delete [] m_vec_KLS;
+  if(m_min_sample_size)
     delete [] m_min_sample_size;
+
+  if(m_variable_B){
+    delete [] m_vec_KLS;
   }
 }
 
@@ -171,7 +175,6 @@ void SMC_PP_MCMC::use_spacing_prior(double space) {
 }
 
 void SMC_PP_MCMC::initialise_function_of_interest(int grid, bool g, bool prob, bool instant, double delta, bool sequential){
-
   m_length_grid=grid;
   m_functionofinterest = new Function_of_Interest * [m_num];
   for(int ds=0; ds<m_num; ds++){
@@ -387,7 +390,8 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       current_number+=1;
       current_max=find_max(m_vec_KLS,m_num);
     }
-
+   }
+   if(m_sample_sizes||(m_variable_B && active && !MCMC_only)){
     for(int ds=0; ds<m_num; ds++){
       if(m_process_observed[ds]==1){
 	if (m_rj_B[ds]->get_size_sample() > m_current_sample_size[ds]) {
@@ -410,7 +414,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
       }else
 	{m_sample_size_A[ds]=0; m_sample_size_B[ds]=0;}
     }
-  }
+   }
 }
 
 void SMC_PP_MCMC::sample_intensities(Particle<changepoint> ** sample, double end, unsigned int sample_size, int ds) {
