@@ -1,0 +1,5 @@
+vastfiles/ind1_row.txt
+vastfiles/ind2_row.txt
+vastfiles/ind6_row.txt
+vastfiles/ind14_row.txt
+vastfiles/ind377_row.txt
