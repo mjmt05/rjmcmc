@@ -843,17 +843,17 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	  counter_A=m_A[index_A];
 	}
 
-	/*index_B++;
+	index_B++;
 	
 	if (index_B >= (int)(m_sample_size_B[ds] - 1)) {
 	  index_B = 0;
 	}
-	counter_B = m_B[index_B];*/
+	counter_B = m_B[index_B];
 
-	if(--counter_B==0){	   
+	/*if(--counter_B==0){	   
 	  index_B++;
 	  counter_B=m_B[index_B];
-	}
+	  }*/
       }
     }
 	
