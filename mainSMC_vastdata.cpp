@@ -214,14 +214,20 @@ if(vastdata)
 
  
  
- SMC_PP_MCMC * SMCobj = NULL;  
+ SMC_PP_MCMC * SMCobj = NULL;
+ unsigned long long int* sample_sizes=NULL;
+ Data<unsigned long long int>* sample_sizes_ptr;
+ if(argc>14){
+   sample_sizes_ptr = new Data<unsigned long long int>(argv[14]);
+   sample_sizes = (*sample_sizes_ptr)[0];
+ }
 
 for(unsigned int run=1; run<=num_runs; run++){
   unsigned int runs = run + batch_number*num_runs;
   unsigned int seed = (runs+1) * 1000;
 
   cout<<runs<<" "<<num_intervals<<endl;
-  SMCobj = new SMC_PP_MCMC(start,end,num_intervals,max_iterations,max_iterations,NULL,nu,0,ppptr,num_of_individuals,dovariable,calculate_intensity,0,SMCMC,0,seed);
+  SMCobj = new SMC_PP_MCMC(start,end,num_intervals,max_iterations,max_iterations,&sample_sizes,nu,0,ppptr,num_of_individuals,dovariable,calculate_intensity,0,SMCMC,0,seed);
   SMCobj->initialise_function_of_interest(grid_function_of_interest,calculate_g,calculate_prob_g,set_delta,delta,0);
   if(store_sample_sizes && dovariable)
     SMCobj->store_sample_sizes();
@@ -319,7 +325,8 @@ cout<<endl;
   if(dovariable){
     mc_divergence::delete_lookup_arrays(divergence_type);
   }
-
+  if(sample_sizes_ptr)
+    delete sample_sizes_ptr;
   
   return(0);
 }
