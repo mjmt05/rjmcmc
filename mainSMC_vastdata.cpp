@@ -275,7 +275,6 @@ for(unsigned int run=1; run<=num_runs; run++){
       SMCobj->print_exp((out_g.str()).c_str());
       SMCobj->print_prob((out_p.str()).c_str());*/
   }
-  
 
   // Particle<changepoint> *** samples = SMCobj->get_sample();
   unsigned long long int* num_samples =  SMCobj->get_final_sample_size();
@@ -283,29 +282,27 @@ for(unsigned int run=1; run<=num_runs; run++){
   //SMCobj->normalise_weights();
   //double ** weights = SMCobj->get_sample_weights();
   unsigned long long int * min = NULL;
-  if(dovariable)
-     min = SMCobj->get_min_sample_sizes();
-  for(unsigned int i=0; i<num_of_individuals; i++){
-    if(dovariable){
+  if(dovariable) {
+    min = SMCobj->get_min_sample_sizes();
+    for(unsigned int i=0; i<num_of_individuals; i++){
+ 
       min_sample_sizes_file<<min[i]<<" ";
       max_sample_sizes_file<<num_samples[i]<<" ";
     }
-
-    
+ 
+    min_sample_sizes_file<<endl;
+    max_sample_sizes_file<<endl;
   }
-
-  min_sample_sizes_file<<endl;
-  max_sample_sizes_file<<endl;
-
   delete SMCobj;
-
  }
 
 
 
 cout<<endl;
- min_sample_sizes_file.close();
- max_sample_sizes_file.close();
+ if (dovariable) {
+   min_sample_sizes_file.close();
+   max_sample_sizes_file.close();
+ }
 
 
 

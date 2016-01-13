@@ -66,7 +66,8 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
     m_burnin=(int)(m_max_sample_size_A/100);
   else
     m_burnin=1000;
-
+  m_current_sample_size = NULL;
+  m_min_sample_size = NULL;
   if(m_sample_sizes||m_variable_B){
     m_min_sample_size = new unsigned long long int[m_num]; 
     m_current_sample_size = new unsigned long long int[m_num];
@@ -86,7 +87,7 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
 
 
 SMC_PP_MCMC::~SMC_PP_MCMC(){
-  
+
   for(int ds=0; ds<m_num; ds++){
     if(MCMC_only){
       delete m_rj_A[ds];
@@ -127,6 +128,8 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
 
   if(m_current_sample_size)
     delete [] m_current_sample_size;
+
+
   if(m_min_sample_size)
     delete [] m_min_sample_size;
 
@@ -839,7 +842,14 @@ void SMC_PP_MCMC::calculate_weights_join_particles(int iter,int ds){
 	  index_A++;
 	  counter_A=m_A[index_A];
 	}
-	    
+
+	/*index_B++;
+	
+	if (index_B >= (int)(m_sample_size_B[ds] - 1)) {
+	  index_B = 0;
+	}
+	counter_B = m_B[index_B];*/
+
 	if(--counter_B==0){	   
 	  index_B++;
 	  counter_B=m_B[index_B];
