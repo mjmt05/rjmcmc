@@ -185,7 +185,6 @@ void SMC_PP_MCMC::initialise_function_of_interest(int grid, bool g, bool prob, b
 }
 
 void SMC_PP_MCMC::delete_samples(int ds){
-    
   for(unsigned long long int i=m_sample_size_A[ds]-1; i>0; i--){
     if(m_sample_A[ds][i]!=m_sample_A[ds][i-1]){
       delete m_sample_A[ds][i];
@@ -201,7 +200,6 @@ void SMC_PP_MCMC::delete_samples(int ds){
 }
 
 void SMC_PP_MCMC::sample_particles(double start, double end){
-  
   long double avg_distance=0;
   //  double variance=0;
   double move_width=m_move_width;
@@ -287,6 +285,8 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  sample_size=m_sample_sizes[ds][m_interval];
 	  if(m_process_observed[ds]>1)
 	    m_sample_size_B[ds]=sample_size;
+	  else
+	    m_sample_size_A[ds]=sample_size;
 	}
 	else if(!m_variable_B && m_process_observed[ds]>1){
 	  sample_size=m_max_sample_size_B;

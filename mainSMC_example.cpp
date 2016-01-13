@@ -42,10 +42,10 @@ int main(int argc, char *argv[])
   bool calculate_online_estimate_number_of_cps = true;
   bool estimate_var_in_ur = false;
   unsigned long long int* sample_sizes = NULL;
-  //  sample_sizes = new unsigned long long int[o.m_num_intervals];
-  //  for(unsigned int i=0;i<o.m_num_intervals;i++)
-  //    sample_sizes[i]=10000 - (i%2)*9500;
-  //  o.m_sample_sizes=&sample_sizes;
+  sample_sizes = new unsigned long long int[o.m_num_intervals];
+  for(unsigned int i=0;i<o.m_num_intervals;i++)
+    sample_sizes[i]=1000 + (i%2)*1000;
+  o.m_sample_sizes=&sample_sizes;
 
   if(o.m_model == "poisson"){
     ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);

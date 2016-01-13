@@ -193,7 +193,7 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
   m_sample_size_A = new unsigned long long int[m_num];
   m_sample_size_B = new unsigned long long int[m_num];
 
-  if(!m_variable_B){
+  if(!m_variable_B && !m_sample_sizes){
     for( int i=0; i<m_num; i++){
       m_sample_size_B[i]=m_max_sample_size_B;
       m_sample_size_A[i]=m_max_sample_size_A;
