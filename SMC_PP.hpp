@@ -318,6 +318,7 @@ void SMC_PP<T>::store_ESS(){
 
 template<class T>
 void SMC_PP<T>::store_sample_sizes(){
+  if (!m_variable_B) { return;}
   m_store_sample_sizes=true;
   m_sample_sizes = new unsigned long long int * [m_num];
   m_sample_sizes[0] = new unsigned long long int[m_num*m_num_of_intervals];
