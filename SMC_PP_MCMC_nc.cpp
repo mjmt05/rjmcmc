@@ -26,12 +26,11 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
   }
   m_rejection_sampling_acceptance_rate = NULL;
   m_num_zero_weights = NULL;
-
+  m_rj_B = NULL;
   if(MCMC_only){
     m_rj_A=new rj_pp*[m_num];
     for(int ds=0; ds<m_num; ds++){
       m_rj_A[ds]=NULL;}
-    m_rj_B=NULL;
     m_rejection_sampling = NULL;
     m_do_exact_sampling = 0;
   }else{
@@ -87,7 +86,6 @@ SMC_PP_MCMC::SMC_PP_MCMC(double start, double end, unsigned int intervals, int s
 
 
 SMC_PP_MCMC::~SMC_PP_MCMC(){
-
   for(int ds=0; ds<m_num; ds++){
     if(MCMC_only){
       delete m_rj_A[ds];
@@ -108,7 +106,6 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
     delete [] m_functionofinterest;
   }
 
- 
   if(MCMC_only){
     delete [] m_rj_A;}
   else{
@@ -125,7 +122,6 @@ SMC_PP_MCMC::~SMC_PP_MCMC(){
     delete [] m_num_zero_weights[0];
     delete [] m_num_zero_weights;
   }
-
   if(m_current_sample_size)
     delete [] m_current_sample_size;
 
@@ -356,6 +352,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	  m_rejection_sampling[ds] = new rejection_sampling((double)(start - avg_distance),  m_cp_start, (double) end, 
 							    sample_size, m_pm[ds], m_nu, m_spacing_prior, (int) seed * (iters + 1),
 							    m_calculate_intensity);
+
 	  if (!m_sample_from_prior) {
 	    m_rejection_sampling[ds]->run_simulation();
 	    m_rejection_sampling_acceptance_rate[ds][iters] = m_rejection_sampling[ds]->m_acceptance_rate;
@@ -370,7 +367,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
 	    }
 	  }
 	  m_sample_B[ds] = m_rejection_sampling[ds]->get_sample();
-	  
+
 	  //cerr << m_rejection_sampling[ds]->m_acceptance_rate << endl;
 	 
 	  
