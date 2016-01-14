@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
   bool store_sample_sizes=1;
   bool SMCMC = 0;
   bool calculate_KL=true;
+  bool track_KL=true;
   if(argc>4)
     max_iterations = atol(argv[4]);
   if(argc>5)
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
     calculate_KL=atoi(argv[14]);
 
   
-  cout<<"Number of update interals "<< num_intervals<<endl;
+  cerr<<"Number of update interals "<< num_intervals<<endl;
   if(num_runs==1 && dovariable)
     store_sample_sizes=1;
 
@@ -75,27 +76,27 @@ int main(int argc, char *argv[])
 
   
   if(dovariable && divergence_type == BIAS ){
-    cout<<"Variable sample size bias"<<endl;
+    cerr<<"Variable sample size bias"<<endl;
   }else if(dovariable && divergence_type == FOI ){
-    cout<<"Variable sample size function of interest (";
+    cerr <<"Variable sample size function of interest (";
     if(calculate_intensity)
-      cout<<"intensity function";
+      cerr<<"intensity function";
     else
-      cout<<"nearest changepoint function";
-    cout <<")"<<endl;
+      cerr<<"nearest changepoint function";
+    cerr <<")"<<endl;
   }else if(dovariable && divergence_type == CHI_SQUARE ){
-    cout<<"Variable sample size chi squared"<<endl;
+    cerr<<"Variable sample size chi squared"<<endl;
   }else if(dovariable && divergence_type == EXTENT ){
-    cout<<"Variable sample size extent"<<endl;
+    cerr<<"Variable sample size extent"<<endl;
   }else if(dovariable && divergence_type == ENTROPY ){
-    cout<<"Variable sample size JS 50-50"<<endl;
+    cerr<<"Variable sample size JS 50-50"<<endl;
   }else{
-    cout<<"Fixed sample size"<<endl;
+    cerr<<"Fixed sample size"<<endl;
   }
   if(loss_type == MINIMAX)
-    cout<<"Minimax Loss" << endl;
+    cerr<<"Minimax Loss" << endl;
   else if(loss_type == AVERAGE)
-    cout<<"Average Loss" << endl;
+    cerr<<"Average Loss" << endl;
 
   //RJ parameters
   double start=0;
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
     myfile>>line;
   }
 
-  cout<<"Number of processes "<<num_of_individuals<<endl;
+  cerr<<"Number of processes "<<num_of_individuals<<endl;
   //num_of_individuals=5;
   
   if( dovariable ){
@@ -158,11 +159,11 @@ int main(int argc, char *argv[])
   //  Histogram combined_histogram_weighted(start,end,num_bins,(end-start)/num_bins,false,false);
 
 
-  cout<<"Total sample size: "<<max_iterations<<",   Min. sample size: " <<initial_iterations<<endl;
-  cout<<"Thinning: " << thin << endl;
-  cout<<"Number of runs: "<<num_runs<<endl;
+  cerr<<"Total sample size: "<<max_iterations<<",   Min. sample size: " <<initial_iterations<<endl;
+  cerr<<"Thinning: " << thin << endl;
+  cerr<<"Number of runs: "<<num_runs<<endl;
   
-cout<<"Number of bins: "<<num_bins<<endl;
+cerr<<"Number of bins: "<<num_bins<<endl;
 
 
  
@@ -230,7 +231,7 @@ for(unsigned int run=1; run<=num_runs; run++){
   unsigned int runs = run + batch_number*num_runs;
   unsigned int seed = (runs+1) * 1000;
 
-  cout<<runs<<" "<<num_intervals<<endl;
+  cerr<<runs<<" "<<num_intervals<<endl;
   SMCobj = new SMC_PP_MCMC(start,end,num_intervals,max_iterations,max_iterations,sample_sizes?&sample_sizes:NULL,nu,0,ppptr,num_of_individuals,dovariable,calculate_intensity,0,SMCMC,0,seed);
   SMCobj->initialise_function_of_interest(grid_function_of_interest,calculate_g,calculate_prob_g,set_delta,delta,0);
   if(store_sample_sizes && dovariable)
@@ -289,10 +290,12 @@ for(unsigned int run=1; run<=num_runs; run++){
       current_histogram.calculate_bin(samples[0][i],samples[0][i]->get_dim_theta());
       current_histogram.increment_bin_counts(NULL,weights[0][i]*num_samples[0]);
     }
+    sum_entropy+=current_histogram.get_shannon_entropy();
+    combined_histogram.add_histogram(&current_histogram);
+    current_histogram.reset();
+    if(track_KL)
+      cout << combined_histogram.get_shannon_entropy()-sum_entropy/(double)run << endl;//comment out if tracking of JSD not wanted
   }
-  sum_entropy+=current_histogram.get_shannon_entropy();
-  combined_histogram.add_histogram(&current_histogram);
-  current_histogram.reset();
   
   unsigned long long int * min = NULL;
   if(dovariable) {
@@ -311,7 +314,7 @@ for(unsigned int run=1; run<=num_runs; run++){
 
 
 
-cout<<endl;
+cerr<<endl;
  if (dovariable) {
    min_sample_sizes_file.close();
    max_sample_sizes_file.close();
@@ -338,12 +341,13 @@ cout<<endl;
   if(sample_sizes_ptr)
     delete sample_sizes_ptr;
 
-  if(calculate_KL){
+  if(calculate_KL && !track_KL){
     double combined_entropy=combined_histogram.get_shannon_entropy();
     double average_entrpopy=sum_entropy/(double)num_runs;
     double jsd = combined_entropy-average_entrpopy;
     //    cout << combined_entropy << " " << average_entrpopy << " " <<  jsd << endl;
-    cout << "KL divergence = " << jsd << endl;
+    //    cout << "KL divergence = " << jsd << endl;
+    cout << jsd << endl;
   }
   
   return(0);
