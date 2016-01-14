@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   long long int burnin=1000;
   long long int thin=10*5;
   int num_intervals=10;
-  int num_bins=275-175-50;//sqrt(max_iterations);//300;
+  int num_bins=50;//sqrt(max_iterations);//300;
   unsigned int batch_number = 0;
   bool vastdata=1;
   bool store_sample_sizes=1;
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     calculate_KL=atoi(argv[14]);
 
   
-  cerr<<"Number of update interals "<< num_intervals<<endl;
+  //  cerr<<"Number of update interals "<< num_intervals<<endl;
   if(num_runs==1 && dovariable)
     store_sample_sizes=1;
 
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     grid_function_of_interest = 100;
 
   
-  if(dovariable && divergence_type == BIAS ){
+  /*  if(dovariable && divergence_type == BIAS ){
     cerr<<"Variable sample size bias"<<endl;
   }else if(dovariable && divergence_type == FOI ){
     cerr <<"Variable sample size function of interest (";
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
   if(loss_type == MINIMAX)
     cerr<<"Minimax Loss" << endl;
   else if(loss_type == AVERAGE)
-    cerr<<"Average Loss" << endl;
+  cerr<<"Average Loss" << endl;*/
 
   //RJ parameters
   double start=0;
@@ -150,8 +150,7 @@ int main(int argc, char *argv[])
     myfile>>line;
   }
 
-  cerr<<"Number of processes "<<num_of_individuals<<endl;
-  //num_of_individuals=5;
+  //  cerr<<"Number of processes "<<num_of_individuals<<endl;
   
   if( dovariable ){
     max_iterations *= num_of_individuals;
@@ -159,11 +158,11 @@ int main(int argc, char *argv[])
   //  Histogram combined_histogram_weighted(start,end,num_bins,(end-start)/num_bins,false,false);
 
 
-  cerr<<"Total sample size: "<<max_iterations<<",   Min. sample size: " <<initial_iterations<<endl;
-  cerr<<"Thinning: " << thin << endl;
-  cerr<<"Number of runs: "<<num_runs<<endl;
+  //  cerr<<"Total sample size: "<<max_iterations<<",   Min. sample size: " <<initial_iterations<<endl;
+  //  cerr<<"Thinning: " << thin << endl;
+  //  cerr<<"Number of runs: "<<num_runs<<endl;
   
-cerr<<"Number of bins: "<<num_bins<<endl;
+  //cerr<<"Number of bins: "<<num_bins<<endl;
 
 
  
@@ -225,13 +224,14 @@ if(vastdata)
  if(argc>15){
    sample_sizes_ptr = new Data<unsigned long long int>(argv[15]);
    sample_sizes = (*sample_sizes_ptr)[0];
+   dovariable=false;
  }
 
 for(unsigned int run=1; run<=num_runs; run++){
   unsigned int runs = run + batch_number*num_runs;
   unsigned int seed = (runs+1) * 1000;
 
-  cerr<<runs<<" "<<num_intervals<<endl;
+  //  cerr<<runs<<" "<<num_intervals<<endl;
   SMCobj = new SMC_PP_MCMC(start,end,num_intervals,max_iterations,max_iterations,sample_sizes?&sample_sizes:NULL,nu,0,ppptr,num_of_individuals,dovariable,calculate_intensity,0,SMCMC,0,seed);
   SMCobj->initialise_function_of_interest(grid_function_of_interest,calculate_g,calculate_prob_g,set_delta,delta,0);
   if(store_sample_sizes && dovariable)
