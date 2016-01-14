@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
   bool vastdata=1;
   bool store_sample_sizes=1;
   bool SMCMC = 0;
+  bool calculate_KL=true;
   if(argc>4)
     max_iterations = atol(argv[4]);
   if(argc>5)
@@ -59,6 +60,8 @@ int main(int argc, char *argv[])
     batch_number=atoi(argv[12]);
   if(argc>13)
     num_intervals=atoi(argv[13]);
+  if(argc>14)
+    calculate_KL=atoi(argv[14]);
 
   
   cout<<"Number of update interals "<< num_intervals<<endl;
@@ -211,14 +214,15 @@ if(vastdata)
   
  }
 
-
- 
+ Histogram_Type<changepoint> combined_histogram(start,end,num_bins,(end-start)/num_bins,true,true,true,0);
+ Histogram_Type<changepoint> current_histogram(start,end,num_bins,(end-start)/num_bins,true,true,true,0);
+ double sum_entropy=0;
  
  SMC_PP_MCMC * SMCobj = NULL;
  unsigned long long int* sample_sizes=NULL;
  Data<unsigned long long int>* sample_sizes_ptr=NULL;
- if(argc>14){
-   sample_sizes_ptr = new Data<unsigned long long int>(argv[14]);
+ if(argc>15){
+   sample_sizes_ptr = new Data<unsigned long long int>(argv[15]);
    sample_sizes = (*sample_sizes_ptr)[0];
  }
 
@@ -276,11 +280,20 @@ for(unsigned int run=1; run<=num_runs; run++){
       SMCobj->print_prob((out_p.str()).c_str());*/
   }
 
-  // Particle<changepoint> *** samples = SMCobj->get_sample();
   unsigned long long int* num_samples =  SMCobj->get_final_sample_size();
-
-  //SMCobj->normalise_weights();
-  //double ** weights = SMCobj->get_sample_weights();
+  if(calculate_KL){
+    Particle<changepoint> *** samples = SMCobj->get_sample();
+    SMCobj->normalise_weights();
+    double ** weights = SMCobj->get_sample_weights();
+    for(unsigned long long int i=0; i<num_samples[0]; i++){
+      current_histogram.calculate_bin(samples[0][i],samples[0][i]->get_dim_theta());
+      current_histogram.increment_bin_counts(NULL,weights[0][i]*num_samples[0]);
+    }
+  }
+  sum_entropy+=current_histogram.get_shannon_entropy();
+  combined_histogram.add_histogram(&current_histogram);
+  current_histogram.reset();
+  
   unsigned long long int * min = NULL;
   if(dovariable) {
     min = SMCobj->get_min_sample_sizes();
@@ -324,6 +337,14 @@ cout<<endl;
   }
   if(sample_sizes_ptr)
     delete sample_sizes_ptr;
+
+  if(calculate_KL){
+    double combined_entropy=combined_histogram.get_shannon_entropy();
+    double average_entrpopy=sum_entropy/(double)num_runs;
+    double jsd = combined_entropy-average_entrpopy;
+    //    cout << combined_entropy << " " << average_entrpopy << " " <<  jsd << endl;
+    cout << "KL divergence = " << jsd << endl;
+  }
   
   return(0);
 }
