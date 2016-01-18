@@ -381,7 +381,7 @@ void SMC_PP_MCMC::sample_particles(double start, double end){
   }
 
   if(m_variable_B && active && !MCMC_only){
-    int current_max = find_max(m_vec_KLS,m_num);
+    unsigned long long int current_max = find_max(m_vec_KLS,m_num);
    
     while(current_number<m_max_sample_size_A){
          m_rj_B[current_max]->runsimulation();

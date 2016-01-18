@@ -32,7 +32,7 @@ public:
   virtual void calculate_function_of_interest(double, double)=0;
   void run_simulation_SMC_PP();
   virtual void delete_samples(int);
-  int find_max(double *, unsigned long long int);
+  unsigned long long int find_max(double *, unsigned long long int);
   void permute_sample();
   void print_sample_A(int);
   Particle<T>*** get_sample(){ return m_sample_A; }
@@ -119,7 +119,7 @@ SMC_PP<T>::SMC_PP(double start, double end, unsigned int num_of_intervals, long 
       m_max_sample_size_B = max(m_max_sample_size_B,m_sample_sizes[0][i]);
     }
   }
-  long long int sample_size = m_max_sample_size_A;
+  long long unsigned int sample_size = m_max_sample_size_A;
   if (varyB) {
     sample_size /= m_num;
   }
@@ -523,10 +523,10 @@ void SMC_PP<T>::swap( int &  element1Ptr, int & element2Ptr )
 
 
 template<class T>
-int SMC_PP<T>::find_max(double * vec, unsigned long long int size)
+unsigned long long int SMC_PP<T>::find_max(double * vec, unsigned long long int size)
 {
   int max=0;
-  for (int i=1; i<size; i++){
+  for (unsigned long long int i=1; i<size; i++){
     if (vec[i] > vec[max]){
       max=i;
     }
