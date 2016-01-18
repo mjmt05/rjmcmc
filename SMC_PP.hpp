@@ -391,7 +391,7 @@ void SMC_PP<T>::run_simulation_SMC_PP(){
     }
 
     if (MCMC_only) {
-      long long int sample_size = m_max_sample_size_A;
+      unsigned long long int sample_size = m_max_sample_size_A;
       if (m_variable_B) {
 	sample_size /= m_num;
       }
