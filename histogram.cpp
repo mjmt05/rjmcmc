@@ -517,6 +517,21 @@ double Histogram::get_shannon_entropy(){
   return entropy;
 }
 
+double Histogram::get_cross_entropy(Histogram* h){
+  double entropy = 0;
+  if(!m_weighted){
+    for(m_bin_count_iter=m_histogram_bin_counts.begin();m_bin_count_iter!=m_histogram_bin_counts.end();++m_bin_count_iter)
+        entropy -= m_bin_count_iter->second*log(h->m_histogram_bin_counts[m_bin_count_iter->first]);
+    entropy = entropy/m_samples + log(h->m_samples);
+  }
+  else{
+    for(m_bin_weight_iter=m_histogram_bin_weights.begin();m_bin_weight_iter!=m_histogram_bin_weights.end();++m_bin_weight_iter)
+      entropy -= m_bin_weight_iter->second*log(h->m_histogram_bin_weights[m_bin_weight_iter->first]);
+    entropy = entropy/m_sum_weights + log(h->m_sum_weights);
+  }
+  return entropy;
+}
+
 double Histogram::get_shannon_entropy_from_array(){
   double entropy = 0;
   for(unsigned long long int j = 0; j < m_histogram_bin_counts_dim; j++){

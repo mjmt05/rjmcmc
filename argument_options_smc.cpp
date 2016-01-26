@@ -57,6 +57,9 @@ ArgumentOptionsSMC::ArgumentOptionsSMC(){
   m_spacing_prior = 0;
   m_smcmc=false;
   m_prior_proposals=false;
+  m_start=0;
+  m_end=112;
+  m_datafile="coal_data_renormalised.txt";
 }
 
 void ArgumentOptionsSMC::parse(int argc, char * argv[]){

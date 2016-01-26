@@ -59,6 +59,7 @@ public:
   void push( double val );
   double density( double val );
   double get_shannon_entropy();
+  double get_cross_entropy(Histogram* h);
   double get_shannon_entropy_from_array();
   double get_true_shannon_entropy( double(*cdf)(double) );
   unsigned long long int get_nonempty_bins(){ return m_nonempty_bins; }
