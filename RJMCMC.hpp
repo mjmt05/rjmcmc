@@ -71,6 +71,7 @@ template< class T>
   void write_primary_function_of_interest_to_file(const string ="foi.txt");
   map<vector<unsigned int>,long long unsigned int>* get_bin_counts() {if (m_histogram) return m_histogram->get_bin_counts(); return NULL;}
   Histogram* get_histogram(){return m_histogram;}
+  Histogram* take_histogram(){Histogram* hist=m_histogram; m_histogram=NULL; return hist;}
   double get_autocorrelation_prob(){ return m_histogram->get_autocorrelation_prob();}
   unsigned int get_MAP_dimension() const {return m_MAP_dimension;};
   Particle<T> * get_MAP(unsigned int k) {return m_MAPs[k];};
