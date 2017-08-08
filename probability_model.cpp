@@ -24,6 +24,7 @@ probability_model::probability_model(vector<string>* data_filenames, double star
    }
    if(make_time_scale)
      construct_time_scale(data_filenames,season);
+
 }
 
 probability_model::probability_model(string* data_filename, string* seasonal_data_filename, double season, bool make_time_scale){

@@ -19,6 +19,9 @@ struct option ArgumentOptions::lopts[] = {
     {"writehistograms", no_argument, NULL, 'w'},
     {"model", required_argument, NULL, 'c'},
     {"importsampling", no_argument, NULL, 'z'},
+    {"seasonalcps", required_argument, NULL, 'S'},
+    {"timescale", required_argument, NULL, 'T'},
+    {"seasonalscale", required_argument, NULL, 'D'},
     {NULL, 0, NULL, 0}
 };
 
@@ -39,11 +42,14 @@ ArgumentOptions::ArgumentOptions(){
   m_write_histograms_to_file = 0;
   m_model = "poisson";
   m_importance_sampling = 0;
- }
+  m_seasonal_changepoints = "";
+  m_timescale = "";
+  m_seasonal_scale = 0;
+}
 
 void ArgumentOptions::parse(int argc, char * argv[]){
 
-   const char *sopts="hi:d:t:c:m:n:a:b:s:lg:evwzpr";
+   const char *sopts="hi:d:t:c:m:n:a:b:s:lg:evwzS:T:D:";
 
   //Parse arguments
   char opt;
@@ -94,6 +100,15 @@ void ArgumentOptions::parse(int argc, char * argv[]){
     case 'z':
       m_importance_sampling = 1;
       break;
+    case 'S':
+      m_seasonal_changepoints = optarg;
+      break;
+    case 'T':
+      m_timescale = optarg;
+      break;
+    case 'D':
+      m_seasonal_scale = stringtolong(optarg, opt);
+      break;
     case 'h':
       usage(0,argv[0]);
       break;
@@ -114,6 +129,10 @@ void ArgumentOptions::parse(int argc, char * argv[]){
     m_grid = m_end;
   }
 
+  if (m_seasonal_changepoints.size() > 0 && m_timescale.size() == 0) {
+    m_seasonal_changepoints = "";
+  }
+  
   if(m_move_width == 0){
     m_move_width = (double)(m_end-m_start)/20.00;
   }
