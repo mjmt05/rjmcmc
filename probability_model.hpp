@@ -108,6 +108,8 @@ class probability_model{
   unsigned int m_num_windows;
   unsigned int* m_windows;
   double** m_windowed_lhd_contributions;
+  double* window_mixture_probs;
+  double window_mixture_probs_sum;
 };
 
 
