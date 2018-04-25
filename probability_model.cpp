@@ -62,6 +62,15 @@ probability_model::~probability_model(){
     delete [] m_data_seasons;
   if(m_rng)
     gsl_rng_free(m_rng);
+  if(m_num_windows>0){
+    for(unsigned int i=0; i < m_num_windows; i++)
+      delete [] m_windowed_lhd_contributions[i];
+    delete [] m_windowed_lhd_contributions;
+    if(m_windows)
+      delete [] m_windows;
+    if(window_mixture_probs)
+      delete [] window_mixture_probs;
+  }
 }
 
 void probability_model::construct(){
