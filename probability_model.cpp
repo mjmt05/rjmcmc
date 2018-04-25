@@ -75,7 +75,8 @@ void probability_model::construct(){
   m_num_windows = 0;
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;
-
+  window_mixture_probs = NULL;
+  window_mixture_probs_sum = 0;
 }
 
 void probability_model::construct_time_scale(vector<string>* data_filenames, double season){
