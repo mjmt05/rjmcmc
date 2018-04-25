@@ -105,6 +105,9 @@ class probability_model{
   bool m_owner_of_data;
   bool m_owner_of_seasonal_scale;
   bool m_owner_of_time_scale;
+  unsigned int m_num_windows;
+  unsigned int* m_windows;
+  double** m_windowed_lhd_contributions;
 };
 
 

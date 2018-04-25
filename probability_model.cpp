@@ -72,6 +72,10 @@ void probability_model::construct(){
   m_currently_observable = true;
   m_rng = NULL;
   m_pvalue_pair_on_log_scale = false;
+  m_num_windows = 0;
+  m_windows = NULL;
+  m_windowed_lhd_contributions = NULL;
+
 }
 
 void probability_model::construct_time_scale(vector<string>* data_filenames, double season){
