@@ -63,13 +63,15 @@ probability_model::~probability_model(){
   if(m_rng)
     gsl_rng_free(m_rng);
   if(m_num_windows>0){
-    for(unsigned int i=0; i < m_num_windows; i++)
-      delete [] m_windowed_lhd_contributions[i];
-    delete [] m_windowed_lhd_contributions;
+    if(m_windowed_lhd_contributions){
+      for(unsigned int i=0; i < m_num_windows; i++)
+	delete [] m_windowed_lhd_contributions[i];
+      delete [] m_windowed_lhd_contributions;
+    }
     if(m_windows)
       delete [] m_windows;
-    if(window_mixture_probs)
-      delete [] window_mixture_probs;
+    if(m_window_mixture_probs)
+      delete [] m_window_mixture_probs;
   }
 }
 
@@ -84,8 +86,9 @@ void probability_model::construct(){
   m_num_windows = 0;
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;
-  window_mixture_probs = NULL;
-  window_mixture_probs_sum = 0;
+  m_window_mixture_probs = NULL;
+  m_window_mixture_probs_sum = 0;
+  read_in_windows();
 }
 
 void probability_model::construct_time_scale(vector<string>* data_filenames, double season){
@@ -253,4 +256,46 @@ double probability_model::combine_p_values_from_endpoints( bool monte_carlo, uns
     combined_value/=monte_carlo_size;
   }
   return log(combined_value);*/
+}
+
+void probability_model::read_in_windows(const std::string& windows_filename,const std::string& window_probs_filename){
+  ifstream WindowStream(windows_filename.c_str(), ios::in);
+  if(!WindowStream.is_open())
+    return;
+  vector<unsigned int> windows;
+  unsigned int w_i;
+  while(WindowStream.good()){
+    string line;
+    getline(WindowStream,line);
+    if(line.size()>0){
+      m_num_windows++;
+      istringstream iss(line);
+      iss >> w_i;
+      windows.push_back(w_i);
+    }
+  }
+  if(m_num_windows>0){
+    m_windows = new unsigned int[m_num_windows];
+    for(unsigned int i=0; i < m_num_windows; i++)
+      m_windows[i] = windows[i];
+  }else
+    return;
+  ifstream WindowProbStream(window_probs_filename.c_str(), ios::in);
+  if(!WindowProbStream.is_open())
+    return;
+  vector<double> window_probs;
+  double p_w_i;
+  while(WindowProbStream.good()){
+    string line;
+    getline(WindowProbStream,line);
+    if(line.size()>0){
+      istringstream iss(line);
+      iss >> p_w_i;
+      m_window_mixture_probs_sum+=w_i;
+      window_probs.push_back(p_w_i);
+    }
+  }
+  m_window_mixture_probs = new double[m_num_windows];
+  for(unsigned int i=0; i < m_num_windows; i++)
+    m_window_mixture_probs[i] = window_probs[i];
 }
