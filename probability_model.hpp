@@ -68,6 +68,7 @@ class probability_model{
   virtual double log_likelihood_changepoints( vector<unsigned long long int>& regime_changepoints_data_indices, vector<double>& regime_changepoints_changepoint_positions ) { return 0; }
   void sample_segment_means(Particle<changepoint>*);
   bool m_random_mean;
+  void read_in_windows(const std::string& windows_filename="windows.txt",const std::string& window_probs_filename = "window_probs.txt"){;}
 
  protected:
   double m_mean;
