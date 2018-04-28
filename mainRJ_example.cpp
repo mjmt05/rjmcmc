@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
   probability_model * ppptr = NULL;
   if(o.m_model == "poisson"){
-    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+    ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,NULL,NULL,o.m_start,o.m_end);
   }else if (o.m_model == "sncp") {
     ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
   } 

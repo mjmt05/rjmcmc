@@ -3,8 +3,8 @@
 #include <math.h>
 #include "decay_function.hpp"
 
-pp_model::pp_model(double alpha,double beta, Data<double> * data, Step_Function* time_scale, Step_Function* seasonal_scale )
-:probability_model(data,seasonal_scale),m_alpha(alpha),m_beta(beta)
+pp_model::pp_model(double alpha,double beta, Data<double> * data, Step_Function* time_scale, Step_Function* seasonal_scale, double start, double end)
+  :probability_model(data,seasonal_scale,start,end),m_alpha(alpha),m_beta(beta)
 {
    m_pp_time_scale = (Univariate_Function*)(time_scale ? time_scale : m_seasonal_scale);
    m_cum_counts = NULL;
@@ -69,8 +69,26 @@ pp_model::~pp_model(){
   if(m_cum_intensity_multipliers)
     delete [] m_cum_intensity_multipliers;
 
-  if(m_pp_time_scale && m_shot_noise_rate > 0) 
+  if(m_pp_time_scale && m_shot_noise_rate > 0)
     delete (Decay_Function*)m_pp_time_scale;
+
+  if(m_windowed_times){
+     for( unsigned int i = 0; i < m_num_windows; i++)
+       delete [] m_windowed_times[i];
+     delete [] m_windowed_times;
+  }
+  if(m_cumsum_windowed_log_intensities){
+    for( unsigned int i = 0; i < m_num_windows; i++)
+       delete [] m_cumsum_windowed_log_intensities[i];
+    delete [] m_cumsum_windowed_log_intensities;
+  }
+  if(m_windowed_event_cum_count){
+     for( unsigned int i = 0; i < m_num_windows; i++)
+       delete [] m_windowed_event_cum_count[i];
+     delete [] m_windowed_event_cum_count;
+  }
+  if(m_num_before_window)
+    delete [] m_num_before_window;
 }
 
 void pp_model::use_random_mean(int seed) {
@@ -91,6 +109,12 @@ void pp_model::construct(){
   m_shot_noise_rate = 0.0;
   m_random_mean = 0;
   m_posterior_mean = 1;
+  m_windowed_times = NULL;
+  m_cumsum_windowed_log_intensities = NULL;
+  m_windowed_event_cum_count = NULL;
+  m_num_before_window = NULL;
+  if(m_num_windows)
+    calculated_window_data_statistics();
 }
 
 void pp_model::poisson_regression_construct(){
@@ -572,4 +596,52 @@ double pp_model::log_likelihood_changepoints( vector<unsigned long long int>& re
     m_t += m_time_scale ? m_time_scale->cumulative_function( t1, t2 ) : t2-t1;
   }
   return log_likelihood_length_and_count( m_t, m_r );
+}
+
+
+void pp_model::calculated_window_data_statistics(){
+  m_windowed_times = new double*[m_num_windows];
+  m_cumsum_windowed_log_intensities = new double*[m_num_windows];
+  m_num_before_window = new unsigned long long int[m_num_windows];
+  m_windowed_event_cum_count = new unsigned long long int*[m_num_windows];
+  for( unsigned int i = 0; i < m_num_windows; i++){
+    m_num_before_window[i]=0;
+    //    unsigned long long int len=m_data_cont->get_cols()-m_windows[i];
+    vector<double> ups, downs;
+    for( unsigned int j = 0; j < m_data_cont->get_cols(); j++){
+      double t_j=(*m_data_cont)[0][j];
+      if(t_j-m_windows[i]>m_start)
+	ups.push_back(t_j);
+      else
+	m_num_before_window[i]++;
+      if(t_j<m_end-m_windows[i])
+	downs.push_back(t_j+m_windows[i]);
+    }
+    unsigned long long int len=ups.size()+downs.size();
+    m_windowed_times[i] = new double[len+1];
+    m_windowed_event_cum_count[i] = new unsigned long long int[len+1];
+    m_cumsum_windowed_log_intensities[i]= new double[ups.size()];
+    m_windowed_times[i][0]=m_windows[i];
+    m_windowed_event_cum_count[i][0]=m_num_before_window[i];
+    unsigned long long int pos1=0, pos2=0;
+    for( unsigned long long int j = 0; j < len; j++){
+      bool up_next=true;
+      if(pos1>=ups.size())
+	up_next=false;
+      else if(pos2<downs.size())
+	up_next=ups[pos1]<=downs[pos2];
+      if(up_next){
+	m_windowed_times[i][j+1]=ups[pos1];
+	double intensity=(m_alpha+m_windowed_event_cum_count[i][j])/(m_beta+m_windows[i]);
+	m_cumsum_windowed_log_intensities[i][pos1]=(pos1==0?0:m_cumsum_windowed_log_intensities[i][pos1-1])+log(intensity);
+	cout << m_cumsum_windowed_log_intensities[i][pos1] << endl;
+	m_windowed_event_cum_count[i][j+1]=m_windowed_event_cum_count[i][j]+1;
+	pos1++;
+      }else{
+	m_windowed_times[i][j+1]=downs[pos2];
+	m_windowed_event_cum_count[i][j+1]=m_windowed_event_cum_count[i][j]-1;
+	pos2++;
+      }
+    }
+  }
 }

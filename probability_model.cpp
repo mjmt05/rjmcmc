@@ -41,8 +41,8 @@ probability_model::probability_model(string* data_filename, string* seasonal_dat
    }
 }
 
-probability_model::probability_model(Data<double> * data, Step_Function* seasonal_scale)
-:m_data_cont(data)
+probability_model::probability_model(Data<double> * data, Step_Function* seasonal_scale, double start, double end)
+  :m_start(start),m_end(end),m_data_cont(data)
 {
    m_owner_of_data = false;
    m_owner_of_time_scale = m_owner_of_seasonal_scale = false;
@@ -65,7 +65,8 @@ probability_model::~probability_model(){
   if(m_num_windows>0){
     if(m_windowed_lhd_contributions){
       for(unsigned int i=0; i < m_num_windows; i++)
-	delete [] m_windowed_lhd_contributions[i];
+	if(m_windowed_lhd_contributions[i])
+	  delete [] m_windowed_lhd_contributions[i];
       delete [] m_windowed_lhd_contributions;
     }
     if(m_windows)
@@ -296,6 +297,9 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
     }
   }
   m_window_mixture_probs = new double[m_num_windows];
-  for(unsigned int i=0; i < m_num_windows; i++)
+  m_windowed_lhd_contributions = new double*[m_num_windows];
+  for(unsigned int i=0; i < m_num_windows; i++){
     m_window_mixture_probs[i] = window_probs[i];
+    m_windowed_lhd_contributions[i] = NULL;
+  }
 }

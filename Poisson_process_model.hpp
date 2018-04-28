@@ -8,7 +8,7 @@ class pp_model : public probability_model{
 
   public:
 
-  pp_model(double, double, Data<double> *, Step_Function* = NULL, Step_Function* = NULL);
+  pp_model(double, double, Data<double> *, Step_Function* = NULL, Step_Function* = NULL, double start=0, double end=1);
   pp_model(vector<string>*, double, double, double = DBL_MAX, double = DBL_MAX, double = DBL_MAX );
   pp_model(vector<string>*);
   pp_model(double alpha,double beta, double rate, Data<double> * data);//Shot noise constructor
@@ -44,8 +44,8 @@ class pp_model : public probability_model{
    double calculate_event_count_log_predictive_df( double increment, bool lower_tail, bool two_sided, bool increment_parameters );
   virtual void use_random_mean(int seed);
   virtual void use_prior_mean(){m_posterior_mean = 0;}
-  
-  
+  void calculated_window_data_statistics();
+
   private:
     unsigned long long int m_r;
     double m_t;
@@ -62,8 +62,11 @@ class pp_model : public probability_model{
     double* m_cum_intensity_multipliers;//fixed mulitpliers for the intensity in Poisson regression.
     Univariate_Function* m_pp_time_scale;
     double m_shot_noise_rate;
-    
     bool m_posterior_mean;
+    double** m_windowed_times;
+    double** m_cumsum_windowed_log_intensities;
+    unsigned long long int** m_windowed_event_cum_count;
+    unsigned long long int* m_num_before_window;
 };
 
 

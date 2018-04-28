@@ -14,7 +14,7 @@ class probability_model{
 
   public:
 
-  probability_model(Data<double> * m_data, Step_Function* seasonal_scale = NULL);
+  probability_model(Data<double> * m_data, Step_Function* seasonal_scale = NULL, double start=0, double end=1);
   probability_model(vector<string>* data_filenames, double start = 0, double end = DBL_MAX, double season = DBL_MAX, bool make_time_scale = true );
   probability_model(string* data_filename = NULL, string* seasonal_data_filename = NULL, double season = DBL_MAX, bool make_time_scale = true );
   virtual ~probability_model();
