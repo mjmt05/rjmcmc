@@ -620,11 +620,16 @@ void pp_model::calculated_window_data_statistics(){
     unsigned long long int len=ups.size()+downs.size();
     m_windowed_times[i] = new double[len+1];
     m_windowed_event_cum_count[i] = new unsigned long long int[len+1];
+    m_windowed_lhd_contributions[i] = new double[len+1];
     m_cumsum_windowed_log_intensities[i]= new double[ups.size()];
     m_windowed_times[i][0]=m_windows[i];
+    m_windowed_lhd_contributions[i][0] = 0;
     m_windowed_event_cum_count[i][0]=m_num_before_window[i];
     unsigned long long int pos1=0, pos2=0;
     for( unsigned long long int j = 0; j < len; j++){
+      double intensity=(m_alpha+m_windowed_event_cum_count[i][j])/(m_beta+m_windows[i]);
+      double len_j=(m_windowed_times[i][j+1]-m_windowed_times[i][j]);
+      m_windowed_lhd_contributions[i][j+1] = m_windowed_lhd_contributions[i][j] - intensity*len_j;
       bool up_next=true;
       if(pos1>=ups.size())
 	up_next=false;
@@ -632,9 +637,7 @@ void pp_model::calculated_window_data_statistics(){
 	up_next=ups[pos1]<=downs[pos2];
       if(up_next){
 	m_windowed_times[i][j+1]=ups[pos1];
-	double intensity=(m_alpha+m_windowed_event_cum_count[i][j])/(m_beta+m_windows[i]);
 	m_cumsum_windowed_log_intensities[i][pos1]=(pos1==0?0:m_cumsum_windowed_log_intensities[i][pos1-1])+log(intensity);
-	cout << m_cumsum_windowed_log_intensities[i][pos1] << endl;
 	m_windowed_event_cum_count[i][j+1]=m_windowed_event_cum_count[i][j]+1;
 	pos1++;
       }else{
