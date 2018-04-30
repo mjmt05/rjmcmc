@@ -35,31 +35,28 @@ void ur_model::use_random_mean(int seed) {
 }
 
 double ur_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint *objl1){
-    double like, y, y2,r;
-    unsigned long long int dataindex1, dataindex2;  
-    dataindex1=obj1->getdataindex();
-    dataindex2=obj2->getdataindex();
-    r = dataindex2-dataindex1;
-    if (r<0){
+    m_current_data_index1=obj1->getdataindex();
+    m_current_data_index2=obj2->getdataindex();
+    if(m_current_data_index2>m_current_data_index1){
       cerr<<"r can not be less than 0"<<endl;
       exit(1);
     }
+    m_r=m_current_data_index2-m_current_data_index1;
 
-    if(r==0)    
-      like = 0;
-    else{
-      like=m_likelihood_term;
-      if(dataindex1==0){
-	y=m_ysum[dataindex2-1];
-	y2=m_ysum2[dataindex2-1];
-      }
-      else{
-	y=m_ysum[dataindex2-1]-m_ysum[dataindex1-1];
-	y2=m_ysum2[dataindex2-1]-m_ysum2[dataindex1-1];
-      }
-      double r_foo = r / 2.0;
-      like += -0.5*log(m_inv_v+r)-(r_foo)*LOG_PI + gsl_sf_lngamma(r_foo+m_alpha)-(r_foo+m_alpha)*log(m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+r))));
+    if(m_r==0)
+      return 0;
+    double like, y, y2;
+    like=m_likelihood_term;
+    if(m_current_data_index1==0){
+      y=m_ysum[m_current_data_index2-1];
+      y2=m_ysum2[m_current_data_index2-1];
     }
+    else{
+      y=m_ysum[m_current_data_index2-1]-m_ysum[m_current_data_index1-1];
+      y2=m_ysum2[m_current_data_index2-1]-m_ysum2[m_current_data_index1-1];
+    }
+    double r_foo = .5*m_r;
+    like += -0.5*log(m_inv_v+m_r)-(r_foo)*LOG_PI + gsl_sf_lngamma(r_foo+m_alpha)-(r_foo+m_alpha)*log(m_gamma+0.5*(y2-y*y*(1.0/(m_inv_v+m_r))));
     return(like);
 }
 

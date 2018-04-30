@@ -84,6 +84,8 @@ void probability_model::construct(){
   m_currently_observable = true;
   m_rng = NULL;
   m_pvalue_pair_on_log_scale = false;
+  m_r=0;
+  m_t=0;
   m_num_windows = 0;
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;
@@ -292,7 +294,7 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
     if(line.size()>0){
       istringstream iss(line);
       iss >> p_w_i;
-      m_window_mixture_probs_sum+=w_i;
+      m_window_mixture_probs_sum+=p_w_i;
       window_probs.push_back(p_w_i);
     }
   }

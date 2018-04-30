@@ -45,10 +45,10 @@ class pp_model : public probability_model{
   virtual void use_random_mean(int seed);
   virtual void use_prior_mean(){m_posterior_mean = 0;}
   void calculated_window_data_statistics();
+  double windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r);
+  double post_window_likelihood(double t1, double t2, unsigned long long int r, unsigned long long int index, unsigned long long int window_index);
 
   private:
-    unsigned long long int m_r;
-    double m_t;
     double m_alpha_star;
     double m_beta_star;
     double m_likelihood_term;
@@ -63,7 +63,8 @@ class pp_model : public probability_model{
     Univariate_Function* m_pp_time_scale;
     double m_shot_noise_rate;
     bool m_posterior_mean;
-    double** m_windowed_times;
+    Data<double>** m_windowed_times;
+    double** m_windowed_intensities;
     double** m_cumsum_windowed_log_intensities;
     unsigned long long int** m_windowed_event_cum_count;
     unsigned long long int* m_num_before_window;

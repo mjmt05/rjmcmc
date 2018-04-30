@@ -77,6 +77,10 @@ class probability_model{
   double m_end;
   double m_season;
   unsigned long long int m_current_data_index;
+  unsigned long long int m_current_data_index1;
+  unsigned long long int m_current_data_index2;
+  unsigned long long int m_r;
+  double m_t;
   static double m_current_t;
   Data<double> * m_data_cont;
   Step_Function* m_time_scale;

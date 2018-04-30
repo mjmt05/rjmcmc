@@ -74,13 +74,18 @@ pp_model::~pp_model(){
 
   if(m_windowed_times){
      for( unsigned int i = 0; i < m_num_windows; i++)
-       delete [] m_windowed_times[i];
+       delete m_windowed_times[i];
      delete [] m_windowed_times;
   }
   if(m_cumsum_windowed_log_intensities){
     for( unsigned int i = 0; i < m_num_windows; i++)
        delete [] m_cumsum_windowed_log_intensities[i];
     delete [] m_cumsum_windowed_log_intensities;
+  }
+  if(m_windowed_intensities){
+    for( unsigned int i = 0; i < m_num_windows; i++)
+       delete [] m_windowed_intensities[i];
+    delete [] m_windowed_intensities;
   }
   if(m_windowed_event_cum_count){
      for( unsigned int i = 0; i < m_num_windows; i++)
@@ -111,6 +116,7 @@ void pp_model::construct(){
   m_posterior_mean = 1;
   m_windowed_times = NULL;
   m_cumsum_windowed_log_intensities = NULL;
+  m_windowed_intensities = NULL;
   m_windowed_event_cum_count = NULL;
   m_num_before_window = NULL;
   if(m_num_windows)
@@ -160,18 +166,18 @@ void pp_model::set_prior_parameters(changepoint *obj1, changepoint *obj2){
   else{
     m_alpha = 4.5;
     m_beta = 1.5;
-  }  
+  }
   m_likelihood_term_zero = m_alpha*log(m_beta);
   m_likelihood_term = m_likelihood_term_zero-gsl_sf_lngamma(m_alpha);
 }
 
 double pp_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint * objl1){
   set_prior_parameters(objl1, obj1);
-  unsigned long long int i1 = obj1->getdataindex();
-  unsigned long long int i2 = obj2->getdataindex();
+  m_current_data_index1 = obj1->getdataindex();
+  m_current_data_index2 = obj2->getdataindex();
   if(m_poisson_regression)
-    return poisson_regression_log_likelihood_interval(i1,i2);
-  m_r = i2 - i1;//number of uncensored observations in each interval
+    return poisson_regression_log_likelihood_interval(m_current_data_index1,m_current_data_index2);
+  m_r = m_current_data_index2 - m_current_data_index1;//number of uncensored observations in each interval
   double t1 = obj1->getchangepoint();
   double t2 = obj2->getchangepoint();
   return log_likelihood_interval_with_count(t1,t2,m_r);
@@ -185,21 +191,18 @@ double pp_model::log_likelihood_up_to(double t){
 }
 
 double pp_model::log_likelihood_interval(double t1, double t2){
-
   if(m_data_cont){
-    unsigned long long int r1 = m_data_cont->find_data_index(t1);
-    unsigned long long int r2 = m_data_cont->find_data_index(t2,0,r1);//assumes t2>=t1
-   
+    m_current_data_index1 = m_data_cont->find_data_index(t1);
+    m_current_data_index2 = m_data_cont->find_data_index(t2,0,m_current_data_index1);//assumes t2>=t1
     if(m_poisson_regression)
-      return poisson_regression_log_likelihood_interval(r1,r2);
-    m_r = r2-r1;
- 
+      return poisson_regression_log_likelihood_interval(m_current_data_index1,m_current_data_index2);
+    m_r = m_current_data_index2-m_current_data_index1;
   }else{
     if(m_poisson_regression)
       return poisson_regression_log_likelihood_interval(static_cast<int>(ceil(t1)),static_cast<int>(ceil(t2)));
     m_r = 0;
   }
-  
+
   return log_likelihood_interval_with_count(t1,t2,m_r);
 }
 
@@ -209,6 +212,8 @@ double pp_model::log_likelihood_interval_with_count(double t1, double t2, unsign
     cerr<<m_t<<" "<<t2<<" "<<t1<<" "<<m_pp_time_scale->cumulative_function(t1,t2)<<" Poisson_process_model.h: length of time interval cannot be less than 0"<<endl;
     return -1e300;
   }
+  if(m_num_windows)
+    return windowed_log_likelihood_interval_with_count(t1,t2,r);
   return (m_shot_noise_rate*r*t1)+log_likelihood_length_and_count(m_t,r);
 }
 
@@ -296,7 +301,7 @@ double pp_model::draw_mean_from_posterior(changepoint *obj1, changepoint *obj2, 
    if (m_mean <= 0 && m_alternative_gamma_prior) {
      m_mean = DBL_MIN;
    }
-  
+
    return m_mean;
 }
 
@@ -600,8 +605,9 @@ double pp_model::log_likelihood_changepoints( vector<unsigned long long int>& re
 
 
 void pp_model::calculated_window_data_statistics(){
-  m_windowed_times = new double*[m_num_windows];
+  m_windowed_times = new Data<double>*[m_num_windows];
   m_cumsum_windowed_log_intensities = new double*[m_num_windows];
+  m_windowed_intensities = new double*[m_num_windows];
   m_num_before_window = new unsigned long long int[m_num_windows];
   m_windowed_event_cum_count = new unsigned long long int*[m_num_windows];
   for( unsigned int i = 0; i < m_num_windows; i++){
@@ -618,33 +624,85 @@ void pp_model::calculated_window_data_statistics(){
 	downs.push_back(t_j+m_windows[i]);
     }
     unsigned long long int len=ups.size()+downs.size();
-    m_windowed_times[i] = new double[len+1];
+    double* windowed_times = new double[len+1];
     m_windowed_event_cum_count[i] = new unsigned long long int[len+1];
-    m_windowed_lhd_contributions[i] = new double[len+1];
-    m_cumsum_windowed_log_intensities[i]= new double[ups.size()];
-    m_windowed_times[i][0]=m_windows[i];
+    m_windowed_lhd_contributions[i] = new double[len+2];
+    m_windowed_intensities[i] = new double[len+2];
+    m_cumsum_windowed_log_intensities[i] = new double[ups.size()+1];
+    windowed_times[0]=m_windows[i];
     m_windowed_lhd_contributions[i][0] = 0;
     m_windowed_event_cum_count[i][0]=m_num_before_window[i];
     unsigned long long int pos1=0, pos2=0;
     for( unsigned long long int j = 0; j < len; j++){
-      double intensity=(m_alpha+m_windowed_event_cum_count[i][j])/(m_beta+m_windows[i]);
-      double len_j=(m_windowed_times[i][j+1]-m_windowed_times[i][j]);
-      m_windowed_lhd_contributions[i][j+1] = m_windowed_lhd_contributions[i][j] - intensity*len_j;
+      m_windowed_intensities[i][j]=(m_alpha+m_windowed_event_cum_count[i][j])/(m_beta+m_windows[i]);
       bool up_next=true;
       if(pos1>=ups.size())
 	up_next=false;
       else if(pos2<downs.size())
 	up_next=ups[pos1]<=downs[pos2];
       if(up_next){
-	m_windowed_times[i][j+1]=ups[pos1];
-	m_cumsum_windowed_log_intensities[i][pos1]=(pos1==0?0:m_cumsum_windowed_log_intensities[i][pos1-1])+log(intensity);
+	windowed_times[j+1]=ups[pos1];
+	m_cumsum_windowed_log_intensities[i][pos1]=(pos1==0?0:m_cumsum_windowed_log_intensities[i][pos1-1])+log(m_windowed_intensities[i][j]);
 	m_windowed_event_cum_count[i][j+1]=m_windowed_event_cum_count[i][j]+1;
 	pos1++;
       }else{
-	m_windowed_times[i][j+1]=downs[pos2];
+	windowed_times[j+1]=downs[pos2];
 	m_windowed_event_cum_count[i][j+1]=m_windowed_event_cum_count[i][j]-1;
 	pos2++;
       }
+      double len_j=(windowed_times[j+1]-windowed_times[j]);
+      m_windowed_lhd_contributions[i][j+1] = m_windowed_lhd_contributions[i][j] - m_windowed_intensities[i][j]*len_j;
+    }
+    m_windowed_intensities[i][len]=(m_alpha+m_windowed_event_cum_count[i][len])/(m_beta+m_windows[i]);
+    m_windowed_lhd_contributions[i][len+1] = (m_end-windowed_times[len])*m_windowed_intensities[i][len];
+    m_windowed_times[i]=new Data<double>(windowed_times,1,len+1);
+    delete [] windowed_times;
+  }
+}
+
+double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){
+  double lik=0,max_lik=-DBL_MAX;
+  double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
+  unsigned int i;
+  for(i = 0; i < m_num_windows; i++)
+    if(m_windows[i]>=m_t)
+      prob_no_window+=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+  if(prob_no_window>0){
+    max_lik=log_likelihood_length_and_count(m_t,r);
+    lik=prob_no_window;
+  }
+  if(prob_no_window>=1)
+    return max_lik;
+
+  for(i = 0; i < m_num_windows; i++){
+    if(m_windows[i]<m_t){
+      double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+      unsigned long long int w_index=m_data_cont->find_data_index(t1+m_windows[i],0,m_current_data_index1,m_current_data_index2);
+      unsigned long long int x_w=w_index-m_current_data_index1;//number events in initial window
+      double l_i=log_likelihood_length_and_count(m_windows[i],x_w);
+      l_i+=post_window_likelihood(t1+m_windows[i],t2,r-x_w,w_index,i);
+      if(l_i>max_lik){
+	lik*=exp(max_lik-l_i);
+	lik+=p_i;
+	max_lik=l_i;
+      }else
+	lik+=p_i*exp(l_i-max_lik);
     }
   }
+  return log(lik)+max_lik;
+}
+
+double pp_model::post_window_likelihood(double t1, double t2, unsigned long long int r, unsigned long long int index, unsigned long long int window_index){
+  double lik=0;
+  if(r>0){
+    lik=m_cumsum_windowed_log_intensities[window_index][index-m_num_before_window[window_index]+r-1];
+    if(index>m_num_before_window[window_index])
+      lik-=m_cumsum_windowed_log_intensities[window_index][index-m_num_before_window[window_index]-1];
+  }
+  unsigned long long int i1=m_windowed_times[window_index]->find_data_index(t1,0,index);
+  unsigned long long int i2=m_windowed_times[window_index]->find_data_index(t2,0,m_current_data_index2);
+  if(i2>i1)
+    lik+=m_windowed_lhd_contributions[window_index][i2]-m_windowed_lhd_contributions[window_index][i1];
+  lik-=((*m_windowed_times[window_index])[0][i1]-t1)*m_windowed_intensities[window_index][i1] + (t2-(*m_windowed_times[window_index])[0][i2-1])*m_windowed_intensities[window_index][i2];
+  return lik;
 }

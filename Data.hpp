@@ -418,11 +418,11 @@ unsigned long long int Data<T>::find_data_index(T theta, unsigned long long int 
     return m_p;
   if(is_empty()||m_X[i][l]>=theta)
     return l;
-  if(!h)
+  if(!h || h>=m_p)
     h = m_p - 1;
   if(m_X[i][h]<theta)
     return h+1;
-  
+
   unsigned long long int m = (l+h)/2;
   while( h-l > 1 ){
     ( m_X[i][m]>=theta ) ? h = m : l = m;
