@@ -603,10 +603,25 @@ double pp_model::log_likelihood_changepoints( vector<unsigned long long int>& re
   return log_likelihood_length_and_count( m_t, m_r );
 }
 
-double pp_model::get_mean_function( double t ){
+double pp_model::get_mean_function( double t, changepoint * cp1, changepoint * cp2 ){
   if(m_shot_noise_rate > 0)
     return m_pp_time_scale->function(t);
-  return 1;
+  if(m_num_windows==0)
+    return 1;
+  double segment_mean=cp1->getmeanvalue();
+  unsigned long long int i1=cp1->getdataindex();
+  double t1=cp1->getchangepoint();
+  unsigned long long int it=m_data_cont->find_data_index(t1+t);
+  double no_window_prob=get_mixture_prob_for_no_window(t);
+  double windowless_mean=(m_alpha+it-i1)/(m_beta+t);
+  double mean_t=no_window_prob*windowless_mean;
+  for(unsigned int i = 0; i < m_num_windows; i++)
+    if(m_windows[i]<t){
+      double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+      unsigned long long int itw=m_data_cont->find_data_index(t1+t-m_windows[i]);
+      mean_t+=p_i*(m_alpha+it-itw)/(m_beta+m_windows[i]);
+    }
+  return mean_t/segment_mean;
 }
 
 void pp_model::calculated_window_data_statistics(){
@@ -667,11 +682,7 @@ void pp_model::calculated_window_data_statistics(){
 
 double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){
   double lik=0,max_lik=-DBL_MAX;
-  double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
-  unsigned int i;
-  for(i = 0; i < m_num_windows; i++)
-    if(m_windows[i]>=m_t)
-      prob_no_window+=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+  double prob_no_window=get_mixture_prob_for_no_window(m_t);
   if(prob_no_window>0){
     max_lik=log_likelihood_length_and_count(m_t,r);
     lik=prob_no_window;
@@ -679,7 +690,7 @@ double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t
   if(prob_no_window>=1)
     return max_lik;
 
-  for(i = 0; i < m_num_windows; i++){
+  for(unsigned int i = 0; i < m_num_windows; i++){
     if(m_windows[i]<m_t){
       double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
       unsigned long long int w_index=m_data_cont->find_data_index(t1+m_windows[i],0,m_current_data_index1,m_current_data_index2);

@@ -33,7 +33,7 @@ class probability_model{
   virtual double calculate_mean(changepoint *, changepoint *, changepoint * = NULL) = 0;
   virtual double draw_mean_from_posterior(changepoint *, changepoint *, changepoint * = NULL){ return m_mean;}
   virtual void set_data_index(changepoint *, unsigned int=0,changepoint * = NULL, changepoint * = NULL);
-  virtual double get_mean_function( double t ){ return 1; }
+  virtual double get_mean_function( double t, changepoint * = NULL, changepoint * = NULL ){ return 1; }
   virtual void collapse_to_seasons_implementation(){}
   virtual void set_parameters_to_current_t(){}
   virtual bool been_active(){ return m_current_data_index>0; }
@@ -69,6 +69,7 @@ class probability_model{
   void sample_segment_means(Particle<changepoint>*);
   bool m_random_mean;
   void read_in_windows(const std::string& windows_filename="windows.txt",const std::string& window_probs_filename = "window_probs.txt");
+  double get_mixture_prob_for_no_window(double t=DBL_MAX);
   bool windowed_model(){return m_num_windows>0;}
 
  protected:

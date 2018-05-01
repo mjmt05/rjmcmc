@@ -360,7 +360,7 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
 
 	if(m_calculate_intensity && k>=fb){
 	  double e;
-	  pm?e = pm->get_mean_function(g):e=1;
+	  pm?e = pm->get_mean_function(g,cpobj,cpobj1):e=1;
 	  m_intensity[k] += cpobj->getmeanvalue()*e*weights[i];
    	}
 	

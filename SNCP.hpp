@@ -23,7 +23,7 @@ public:
  virtual double calculate_prior_ratio(Particle<changepoint>*,unsigned int){return(m_prior_ratio);}
  double gamma_distribution_calculations(changepoint *, changepoint *, changepoint *,changepoint * =NULL, bool=1);
  virtual double proposal_ratio(Particle<changepoint>*,unsigned int){return(m_proposal_ratio);}
- virtual double get_mean_function( double t ){ return m_pp_time_scale->function(t); }
+ virtual double get_mean_function( double t, changepoint * = NULL, changepoint * = NULL ){ return m_pp_time_scale->function(t); }
  virtual void propose_combined_parameters(Particle<changepoint>*,Particle<changepoint>*,changepoint *, double);/*int tells the index of the particle for the combined region*/
  virtual double non_conjugate_weight_terms(Particle<changepoint>*);
  double calculate_pdf(double, double, double);

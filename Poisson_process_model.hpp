@@ -28,7 +28,7 @@ class pp_model : public probability_model{
    virtual void calculate_sequential_log_predictive_dfs(double start, double end, double increment, bool lower_tail = true, bool two_sided = false, double control_chart_weight = 0.05, string* filename_ptr = NULL, vector<double>* dfs = NULL );
    virtual void set_parameters_to_current_t();
    virtual double calculate_log_predictive_df_bounds( double increment, bool lower_tail = true, bool two_sided = false, bool increment_parameters = true );
-   virtual double get_mean_function( double t );
+   virtual double get_mean_function( double t, changepoint * = NULL, changepoint * = NULL );
    virtual double log_likelihood_changepoints( vector<unsigned long long int>&, vector<double>& );
    virtual double get_alpha(){return m_alpha;}
    virtual double get_beta(){return m_beta;}

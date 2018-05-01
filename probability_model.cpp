@@ -266,7 +266,7 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
   if(!WindowStream.is_open())
     return;
   vector<unsigned int> windows;
-  unsigned int w_i;
+  unsigned int i,w_i;
   while(WindowStream.good()){
     string line;
     getline(WindowStream,line);
@@ -279,10 +279,13 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
   }
   if(m_num_windows>0){
     m_windows = new unsigned int[m_num_windows];
-    for(unsigned int i=0; i < m_num_windows; i++)
+    for(i=0; i < m_num_windows; i++)
       m_windows[i] = windows[i];
   }else
     return;
+  m_windowed_lhd_contributions = new double*[m_num_windows];
+  for(i=0; i < m_num_windows; i++)
+    m_windowed_lhd_contributions[i] = NULL;
   ifstream WindowProbStream(window_probs_filename.c_str(), ios::in);
   if(!WindowProbStream.is_open())
     return;
@@ -299,9 +302,14 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
     }
   }
   m_window_mixture_probs = new double[m_num_windows];
-  m_windowed_lhd_contributions = new double*[m_num_windows];
-  for(unsigned int i=0; i < m_num_windows; i++){
+  for(i=0; i < m_num_windows; i++)
     m_window_mixture_probs[i] = window_probs[i];
-    m_windowed_lhd_contributions[i] = NULL;
-  }
+}
+
+double probability_model::get_mixture_prob_for_no_window(double t){
+  double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
+  for(unsigned int i = 0; i < m_num_windows; i++)
+    if(m_windows[i]>=t)
+      prob_no_window+=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+  return prob_no_window;
 }
