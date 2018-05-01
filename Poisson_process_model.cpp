@@ -603,6 +603,11 @@ double pp_model::log_likelihood_changepoints( vector<unsigned long long int>& re
   return log_likelihood_length_and_count( m_t, m_r );
 }
 
+double pp_model::get_mean_function( double t ){
+  if(m_shot_noise_rate > 0)
+    return m_pp_time_scale->function(t);
+  return 1;
+}
 
 void pp_model::calculated_window_data_statistics(){
   m_windowed_times = new Data<double>*[m_num_windows];

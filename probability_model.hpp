@@ -69,6 +69,7 @@ class probability_model{
   void sample_segment_means(Particle<changepoint>*);
   bool m_random_mean;
   void read_in_windows(const std::string& windows_filename="windows.txt",const std::string& window_probs_filename = "window_probs.txt");
+  bool windowed_model(){return m_num_windows>0;}
 
  protected:
   double m_mean;

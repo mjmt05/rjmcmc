@@ -664,7 +664,7 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
       if(!m_conjugate){
 	m_pm->propose_new_parameters(m_current_particle,-1,3,NULL,m_end_of_int_changepoint);
       }
-      
+
       double likelihood = m_pm->log_likelihood_interval(cpobj,cpobj_temp);
       double prior = -m_nu*(m_end_time-m_start_time);
       cpobj->setlikelihood(likelihood);
@@ -685,13 +685,12 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
 void rj_pp::calculate_function_of_interest(){
   double sum=0;
   probability_model * pm = NULL;
-  if(!m_conjugate){
+  if(!m_conjugate||m_pm->windowed_model())
     pm = m_pm;
-  }
 
-  if(m_storing_sample){  
+  if(m_storing_sample)
     m_functionofinterest->calculate_function(m_start_time,m_end_time,m_sample,m_size_of_sample,NULL,sum,0,0,0,pm);
-  }else{
+  else{
     double weight = m_current_importance_weight;
     m_functionofinterest->calculate_function(m_start_time,m_end_time,&m_current_particle,1,&weight,sum,0,0,0,pm);
   }
