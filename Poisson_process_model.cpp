@@ -715,8 +715,8 @@ double pp_model::post_window_likelihood(double t1, double t2, unsigned long long
     if(index>m_num_before_window[window_index])
       lik-=m_cumsum_windowed_log_intensities[window_index][index-m_num_before_window[window_index]-1];
   }
-  unsigned long long int i1=m_windowed_times[window_index]->find_data_index(t1,0,index);
-  unsigned long long int i2=m_windowed_times[window_index]->find_data_index(t2,0,m_current_data_index2);
+  unsigned long long int i1=m_windowed_times[window_index]->find_data_index(t1,0,index-m_num_before_window[window_index]);
+  unsigned long long int i2=m_windowed_times[window_index]->find_data_index(t2,0,m_current_data_index2-m_num_before_window[window_index]);
   if(i2>i1)
     lik+=m_windowed_lhd_contributions[window_index][i2]-m_windowed_lhd_contributions[window_index][i1];
   lik-=((*m_windowed_times[window_index])[0][i1]-t1)*m_windowed_intensities[window_index][i1] + (t2-(*m_windowed_times[window_index])[0][i2-1])*m_windowed_intensities[window_index][i2];
