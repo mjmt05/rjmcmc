@@ -681,10 +681,10 @@ void pp_model::calculated_window_data_statistics(){
 }
 
 double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){
-  double lik=0,max_lik=-DBL_MAX;
+  double lik=0,max_lik=-DBL_MAX,no_window_lik=-DBL_MAX;
   double prob_no_window=get_mixture_prob_for_no_window(m_t);
   if(prob_no_window>0){
-    max_lik=log_likelihood_length_and_count(m_t,r);
+    max_lik=no_window_lik=log_likelihood_length_and_count(m_t,r);
     lik=prob_no_window;
   }
   if(prob_no_window>=1)
@@ -697,6 +697,7 @@ double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t
       unsigned long long int x_w=w_index-m_current_data_index1;//number events in initial window
       double l_i=log_likelihood_length_and_count(m_windows[i],x_w);
       l_i+=post_window_likelihood(t1+m_windows[i],t2,r-x_w,w_index,i);
+      //      cout << l_i << endl;
       if(l_i>max_lik){
 	lik*=exp(max_lik-l_i);
 	lik+=p_i;
@@ -705,6 +706,7 @@ double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t
 	lik+=p_i*exp(l_i-max_lik);
     }
   }
+  //  cout << no_window_lik << endl; exit(1);
   return log(lik)+max_lik;
 }
 

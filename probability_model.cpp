@@ -265,8 +265,9 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
   ifstream WindowStream(windows_filename.c_str(), ios::in);
   if(!WindowStream.is_open())
     return;
-  vector<unsigned int> windows;
-  unsigned int i,w_i;
+  vector<double> windows;
+  unsigned int i;
+  double w_i;
   while(WindowStream.good()){
     string line;
     getline(WindowStream,line);
@@ -278,7 +279,7 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
     }
   }
   if(m_num_windows>0){
-    m_windows = new unsigned int[m_num_windows];
+    m_windows = new double[m_num_windows];
     for(i=0; i < m_num_windows; i++)
       m_windows[i] = windows[i];
   }else
