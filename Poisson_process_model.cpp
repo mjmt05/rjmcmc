@@ -674,7 +674,7 @@ void pp_model::calculated_window_data_statistics(){
       m_windowed_lhd_contributions[i][j+1] = m_windowed_lhd_contributions[i][j] - m_windowed_intensities[i][j]*len_j;
     }
     m_windowed_intensities[i][len]=(m_alpha+m_windowed_event_cum_count[i][len])/(m_beta+m_windows[i]);
-    m_windowed_lhd_contributions[i][len+1] = (m_end-windowed_times[len])*m_windowed_intensities[i][len];
+    m_windowed_lhd_contributions[i][len+1] = m_windowed_lhd_contributions[i][len] - (m_end-windowed_times[len])*m_windowed_intensities[i][len];
     m_windowed_times[i]=new Data<double>(windowed_times,1,len+1);
     delete [] windowed_times;
   }
