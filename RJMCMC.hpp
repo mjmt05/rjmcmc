@@ -111,6 +111,7 @@ template< class T>
   void non_conjugate(){m_conjugate=0;}
   void constrained_model(){m_constraint=true;}
   virtual bool draw_means_from_posterior( bool test_constraint= true ){return true;}
+  pair <double,unsigned int> get_max_log_likelihood(){ return make_pair(m_max_log_likelihood,m_dim_max_likelihood); }
 
  protected:
  
@@ -131,6 +132,9 @@ template< class T>
   double m_log_proposal_ratio;
   double m_log_prior_ratio;
   double m_log_posterior_ratio;
+  double m_log_likelihood;
+  double m_max_log_likelihood;
+  unsigned int m_dim_max_likelihood;
   double m_b; //probability of doing a birth
   double m_d; //probability of doing a death
   double m_m; //probability of doing a move
@@ -281,6 +285,8 @@ template<class T>
   m_current_importance_weight = 1;
   m_sum_importance_weights = m_iterations*m_thinning;
   m_sum_thinned_importance_weights = m_iterations;
+  m_max_log_likelihood = -DBL_MAX;
+  m_dim_max_likelihood = 0;
 }
 
 template<class T>
@@ -452,6 +458,11 @@ template<class T>
       }
     }
     if (m_accept) {
+      m_log_likelihood+=m_log_likelihood_ratio;
+      if(m_log_likelihood>m_max_log_likelihood){
+	m_max_log_likelihood=m_log_likelihood;
+	m_dim_max_likelihood=m_current_particle->get_dim_theta();
+      }
       m_accept_between_thinning = true;
       /*birth*/
       if (u1<=m_b){

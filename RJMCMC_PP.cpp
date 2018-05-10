@@ -668,6 +668,7 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
       double likelihood = m_pm->log_likelihood_interval(cpobj,cpobj_temp);
       double prior = -m_nu*(m_end_time-m_start_time);
       cpobj->setlikelihood(likelihood);
+      m_log_likelihood = likelihood;
       m_current_particle -> set_log_posterior(likelihood+prior);
 
       if (m_calculate_mean && m_conjugate){

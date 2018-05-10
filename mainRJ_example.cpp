@@ -69,6 +69,8 @@ int main(int argc, char *argv[])
   cout << endl;
   cout << "MAP dimension: " << rjpobject.get_MAP_dimension() << endl;
   cout << "MAP changepoints and mean of the MAP dimension: " << *rjpobject.get_MAP_dimension_MAP() << endl;
+  pair<double,unsigned int> maxlik=rjpobject.get_max_log_likelihood();
+  cout << "Maximum likelihood: " << maxlik.first << "\t" << maxlik.second << endl;
 
   if(o.m_calculate_posterior_mean){
     Function_of_Interest * foi = rjpobject.get_foi();
