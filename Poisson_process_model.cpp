@@ -109,7 +109,7 @@ void pp_model::construct(){
   m_likelihood_term = m_likelihood_term_zero-gsl_sf_lngamma(m_alpha);
   if( m_seasonal_analysis )
     collapse_to_seasons();
-  m_poisson_regression = false;
+  m_poisson_regression = m_data_cont == NULL;
   m_cum_intensity_multipliers = NULL;
   m_shot_noise_rate = 0.0;
   m_random_mean = 0;
@@ -120,16 +120,16 @@ void pp_model::construct(){
   m_windowed_event_cum_count = NULL;
   m_num_before_window = NULL;
   if(m_num_windows)
-    calculated_window_data_statistics();
+    calculate_window_data_statistics();
 }
 
 void pp_model::poisson_regression_construct(){
+  m_cum_counts->replace_with_cumulative();
   construct();
   m_poisson_regression = true;
   //  double log_sum_fact_counts = 0;
   //  for(unsigned long long int i = 0; i < m_cum_counts->get_cols(); i++)
   //    log_sum_fact_counts += gsl_sf_lnfact((*m_cum_counts)[0][i]);
-  m_cum_counts->replace_with_cumulative();
 }
 
 void pp_model::construct_empirical_prior(){
@@ -234,6 +234,8 @@ double pp_model::poisson_regression_log_likelihood_interval(unsigned long long i
   else
     m_t = (i2>0 ? m_cum_intensity_multipliers[i2-1] : 0) - (i1>0 ? m_cum_intensity_multipliers[i1-1] : 0);
   m_r = (i2>0 ? (*m_cum_counts)[0][i2-1] : 0) - (i1>0 ? (*m_cum_counts)[0][i1-1] : 0);
+  if(m_num_windows)
+    return windowed_log_likelihood_interval_with_count(i1,i2,m_r);
   return log_likelihood_length_and_count(m_t,m_r);
 }
 
@@ -611,20 +613,44 @@ double pp_model::get_mean_function( double t, changepoint * cp1, changepoint * c
   double segment_mean=cp1->getmeanvalue();
   unsigned long long int i1=cp1->getdataindex();
   double t1=cp1->getchangepoint();
-  unsigned long long int it=m_data_cont->find_data_index(t1+t);
+  unsigned long long int it=m_data_cont?m_data_cont->find_data_index(t1+t) : t1+t;
+  //(i2>0 ? (*m_cum_counts)[0][i2-1] : 0) - (i1>0 ? (*m_cum_counts)[0][i1-1] : 0);
   double no_window_prob=get_mixture_prob_for_no_window(t);
   double windowless_mean=(m_alpha+it-i1)/(m_beta+t);
   double mean_t=no_window_prob*windowless_mean;
   for(unsigned int i = 0; i < m_num_windows; i++)
     if(m_windows[i]<t){
       double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
-      unsigned long long int itw=m_data_cont->find_data_index(t1+t-m_windows[i]);
+      unsigned long long int itw=m_data_cont?m_data_cont->find_data_index(t1+t-m_windows[i]) : (*m_cum_counts)[0][static_cast<unsigned int>(t1+t)]-(*m_cum_counts)[0][static_cast<unsigned int>(t1+t-m_windows[i])];
       mean_t+=p_i*(m_alpha+it-itw)/(m_beta+m_windows[i]);
     }
   return mean_t/segment_mean;
 }
 
-void pp_model::calculated_window_data_statistics(){
+void pp_model::calculate_window_data_statistics(){
+  if(!m_poisson_regression)
+    calculate_cts_time_window_data_statistics();
+  else
+    calculate_dsc_time_window_data_statistics();
+}
+
+void pp_model::calculate_dsc_time_window_data_statistics(){
+  for( unsigned int i = 0; i < m_num_windows; i++){
+    unsigned long long int len=static_cast<unsigned long long int>(m_cum_counts->get_cols()-m_windows[i])-1;
+    m_windowed_lhd_contributions[i] = new double[len+1];
+    m_windowed_lhd_contributions[i][0] = 0;
+    for( unsigned long long int j = 0; j < len; j++){
+      unsigned long long int jth_count=(*m_cum_counts)[0][static_cast<unsigned long long int>(m_windows[i])+j]-(*m_cum_counts)[0][j];
+      unsigned long long int jppth_count=(*m_cum_counts)[0][static_cast<unsigned long long int>(m_windows[i])+j+1]-(*m_cum_counts)[0][j];
+      double lhd_term=(m_alpha+jth_count)*log(m_beta+m_windows[i])-(m_alpha+jppth_count)*log(m_beta+m_windows[i]+1);
+      if(jppth_count>jth_count)
+	lhd_term+=gsl_sf_lngamma(m_alpha+jppth_count)-gsl_sf_lngamma(m_alpha+jth_count);
+      m_windowed_lhd_contributions[i][j+1] = m_windowed_lhd_contributions[i][j]+lhd_term;
+    }
+  }
+}
+
+void pp_model::calculate_cts_time_window_data_statistics(){
   m_windowed_times = new Data<double>*[m_num_windows];
   m_cumsum_windowed_log_intensities = new double*[m_num_windows];
   m_windowed_intensities = new double*[m_num_windows];
@@ -682,7 +708,8 @@ void pp_model::calculated_window_data_statistics(){
 
 double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r){
   double lik=0,max_lik=-DBL_MAX,no_window_lik=-DBL_MAX;
-  double prob_no_window=get_mixture_prob_for_no_window(m_t);
+  double seg_length=m_data_cont?m_t:m_current_data_index2-m_current_data_index1-1;
+  double prob_no_window=get_mixture_prob_for_no_window(seg_length);
   if(prob_no_window>0){
     max_lik=no_window_lik=log_likelihood_length_and_count(m_t,r);
     lik=prob_no_window;
@@ -690,13 +717,26 @@ double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t
   if(prob_no_window>=1)
     return max_lik;
 
+  unsigned long long int w_index, x_w;
   for(unsigned int i = 0; i < m_num_windows; i++){
-    if(m_windows[i]<m_t){
+    if(m_windows[i]<seg_length){
       double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
-      unsigned long long int w_index=m_data_cont->find_data_index(t1+m_windows[i],0,m_current_data_index1,m_current_data_index2);
-      unsigned long long int x_w=w_index-m_current_data_index1;//number events in initial window
-      double l_i=log_likelihood_length_and_count(m_windows[i],x_w);
-      l_i+=post_window_likelihood(t1+m_windows[i],t2,r-x_w,w_index,i);
+      if(m_data_cont)
+	w_index=m_data_cont->find_data_index(t1+m_windows[i],0,m_current_data_index1,m_current_data_index2);
+      else
+	w_index=m_current_data_index1+static_cast<unsigned int>(m_windows[i]);
+      if(!m_poisson_regression)
+	x_w=w_index-m_current_data_index1;//number events in initial window
+      else{
+	x_w=(*m_cum_counts)[0][w_index];
+	if(m_current_data_index1>0)
+	  x_w-=(*m_cum_counts)[0][m_current_data_index1-1];
+      }
+      double l_i=log_likelihood_length_and_count(!m_poisson_regression?m_windows[i]:static_cast<unsigned int>(m_windows[i])+1,x_w);
+      if(!m_poisson_regression)
+	l_i+=post_window_likelihood(t1+m_windows[i],t2,r-x_w,w_index,i);
+      else
+	l_i+=m_windowed_lhd_contributions[i][m_current_data_index2-static_cast<unsigned int>(m_windows[i])-1]-m_windowed_lhd_contributions[i][m_current_data_index1];
       //      cout << l_i << endl;
       if(l_i>max_lik){
 	lik*=exp(max_lik-l_i);

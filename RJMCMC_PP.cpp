@@ -653,9 +653,9 @@ void rj_pp::update_likelihood_move_parameter(int position, double like_ratio){
 
 
 void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
- 
-    if (ptr2particle==NULL){    
-      
+    if(m_current_particle)
+      return;
+    if (ptr2particle==NULL){
       changepoint *cpobj = new changepoint(m_start_time,0);
       m_pm->set_data_index(cpobj,0);
       m_current_particle = new Particle<changepoint>(0,0,cpobj);
@@ -665,11 +665,11 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
 	m_pm->propose_new_parameters(m_current_particle,-1,3,NULL,m_end_of_int_changepoint);
       }
 
-      double likelihood = m_pm->log_likelihood_interval(cpobj,cpobj_temp);
+      m_max_log_likelihood = m_log_likelihood = m_pm->log_likelihood_interval(cpobj,cpobj_temp);
+      m_dim_max_likelihood = 0;
       double prior = -m_nu*(m_end_time-m_start_time);
-      cpobj->setlikelihood(likelihood);
-      m_log_likelihood = likelihood;
-      m_current_particle -> set_log_posterior(likelihood+prior);
+      cpobj->setlikelihood(m_log_likelihood);
+      m_current_particle -> set_log_posterior(m_log_likelihood+prior);
 
       if (m_calculate_mean && m_conjugate){
 
@@ -680,6 +680,8 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
     }
     else{
       m_current_particle = ptr2particle;
+      m_max_log_likelihood = -DBL_MAX;
+      m_dim_max_likelihood = m_current_particle->get_dim_theta();;
     }
 }
 

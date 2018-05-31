@@ -44,7 +44,9 @@ class pp_model : public probability_model{
    double calculate_event_count_log_predictive_df( double increment, bool lower_tail, bool two_sided, bool increment_parameters );
   virtual void use_random_mean(int seed);
   virtual void use_prior_mean(){m_posterior_mean = 0;}
-  void calculated_window_data_statistics();
+  void calculate_window_data_statistics();
+  void calculate_cts_time_window_data_statistics();
+  void calculate_dsc_time_window_data_statistics();
   double windowed_log_likelihood_interval_with_count(double t1, double t2, unsigned long long int r);
   double post_window_likelihood(double t1, double t2, unsigned long long int r, unsigned long long int index, unsigned long long int window_index);
 
