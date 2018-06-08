@@ -86,6 +86,7 @@ void probability_model::construct(){
   m_pvalue_pair_on_log_scale = false;
   m_r=0;
   m_t=0;
+  m_log_likelihood_constant=0;
   m_num_windows = 0;
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;

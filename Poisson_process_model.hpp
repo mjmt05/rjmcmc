@@ -65,6 +65,7 @@ class pp_model : public probability_model{
     Univariate_Function* m_pp_time_scale;
     double m_shot_noise_rate;
     bool m_posterior_mean;
+    double m_log_sum_fact_counts;
     Data<double>** m_windowed_times;
     double** m_windowed_intensities;
     double** m_cumsum_windowed_log_intensities;

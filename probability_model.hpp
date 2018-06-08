@@ -50,6 +50,7 @@ class probability_model{
   double get_end() const {return m_end;}
   double get_mean() const {return m_mean;}
   double get_var() const {return m_var;}
+  double get_likelihood_constant() const {return m_log_likelihood_constant;}
   Data<double> * get_data()const{return m_data_cont;}
   void construct_time_scale(vector<string>* data_filenames, double = DBL_MAX );
   Step_Function* get_seasonal_step_function(){ return m_seasonal_scale;}
@@ -96,6 +97,7 @@ class probability_model{
   double m_predictive_two_sided_df;
   double m_predictive_two_sided_df2;
   double m_minimum_tail;
+  double m_log_likelihood_constant;
   vector<double> m_df_values;
   vector<double> m_pdf_values;
   pair<double,double> m_pvalue_pair;//the upper and lower limits of the current p-value (equal for cts RVs))

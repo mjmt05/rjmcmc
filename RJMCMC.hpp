@@ -285,8 +285,6 @@ template<class T>
   m_current_importance_weight = 1;
   m_sum_importance_weights = m_iterations*m_thinning;
   m_sum_thinned_importance_weights = m_iterations;
-  m_max_log_likelihood = -DBL_MAX;
-  m_dim_max_likelihood = 0;
 }
 
 template<class T>
@@ -869,7 +867,7 @@ template<class T>
       map<unsigned int,unsigned long long int>::iterator iter = m_dimension_frequency_count.begin();
       while(iter != m_dimension_frequency_count.end()){
           if(iter->second)
-              OutputStream << iter->first << "\t" << (double)iter->second/m_iters << endl;
+	    OutputStream << iter->first << "\t" << (double)iter->second/m_iters << endl;
           ++iter;
       }
   }else{

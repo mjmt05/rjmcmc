@@ -246,7 +246,6 @@ double rj_pp::log_likelihood_ratio_birth(changepoint * new_value, int position){
     
     double old_likelihood = cpobj_left->getlikelihood();
     double log_likelihood_ratio = likelihood_contribution_right + likelihood_contribution_left - old_likelihood;
-
     return(log_likelihood_ratio);
     
 }
@@ -665,10 +664,11 @@ void rj_pp::initiate_sample(Particle<changepoint>* ptr2particle){
 	m_pm->propose_new_parameters(m_current_particle,-1,3,NULL,m_end_of_int_changepoint);
       }
 
-      m_max_log_likelihood = m_log_likelihood = m_pm->log_likelihood_interval(cpobj,cpobj_temp);
+      double null_model_lhd=m_pm->log_likelihood_interval(cpobj,cpobj_temp);
+      m_max_log_likelihood = m_log_likelihood = null_model_lhd+m_pm->get_likelihood_constant()+null_model_lhd;
       m_dim_max_likelihood = 0;
       double prior = -m_nu*(m_end_time-m_start_time);
-      cpobj->setlikelihood(m_log_likelihood);
+      cpobj->setlikelihood(null_model_lhd);
       m_current_particle -> set_log_posterior(m_log_likelihood+prior);
 
       if (m_calculate_mean && m_conjugate){
