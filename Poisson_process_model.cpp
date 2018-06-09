@@ -612,20 +612,23 @@ double pp_model::get_mean_function( double t, changepoint * cp1, changepoint * c
   if(m_num_windows==0)
     return 1;
   double segment_mean=cp1->getmeanvalue();
-  unsigned long long int i1=cp1->getdataindex();
-  unsigned long long int entry_count=m_data_cont?i1:(*m_cum_counts)[0][i1<m_cum_counts->get_cols()?i1:m_cum_counts->get_cols()-1];
   double t1=cp1->getchangepoint();
-  unsigned long long int it=m_data_cont?m_data_cont->find_data_index(t1+t) : (static_cast<unsigned int>(t1+t)<m_cum_counts->get_cols() ? static_cast<unsigned int>(t1+t):m_cum_counts->get_cols()-1) ;
+  unsigned long long int i1=cp1->getdataindex();
+  unsigned long long int it=m_data_cont?m_data_cont->find_data_index(t1+t) : (static_cast<unsigned int>(t1+t)<m_cum_counts->get_cols() ? static_cast<unsigned int>(t1+t):m_cum_counts->get_cols()-1);
+  if(i1==it & i1>0)
+    i1-=1;
+  unsigned long long int entry_count=m_data_cont?i1:(*m_cum_counts)[0][i1<m_cum_counts->get_cols()?i1:m_cum_counts->get_cols()-1];
   //  cout << t << " " << t1+t << endl;
   //(i2>0 ? (*m_cum_counts)[0][i2-1] : 0) - (i1>0 ? (*m_cum_counts)[0][i1-1] : 0);
   double no_window_prob=get_mixture_prob_for_no_window(t);
-  double windowless_mean=(m_alpha+(m_data_cont?it:(*m_cum_counts)[0][it])-entry_count)/(m_beta+t);
+  unsigned long long int count=(m_data_cont?it:(*m_cum_counts)[0][min(it,m_cum_counts->get_cols()-1)])-entry_count;
+  double windowless_mean=(m_alpha+count)/(m_beta+t);
   double mean_t=no_window_prob*windowless_mean;
   for(unsigned int i = 0; i < m_num_windows; i++)
     if(m_windows[i]<t){
       double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
       unsigned long long int itw=m_data_cont?m_data_cont->find_data_index(t1+t-m_windows[i]) : it-static_cast<unsigned int>(m_windows[i]);
-      unsigned long long int count=m_data_cont?it-itw:(*m_cum_counts)[0][it]-(*m_cum_counts)[0][itw];
+      count=m_data_cont?it-itw:(*m_cum_counts)[0][it]-(*m_cum_counts)[0][itw];
       double len=m_data_cont?m_windows[i]:(double)(it-itw);
       mean_t+=p_i*(m_alpha+count)/(m_beta+len);
     }
