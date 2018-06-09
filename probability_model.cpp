@@ -311,7 +311,7 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
 double probability_model::get_mixture_prob_for_no_window(double t){
   double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
   for(unsigned int i = 0; i < m_num_windows; i++)
-    if(m_windows[i]>=t)
+    if(m_windows[i]>t)
       prob_no_window+=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
   return prob_no_window;
 }

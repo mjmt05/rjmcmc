@@ -614,22 +614,26 @@ double pp_model::get_mean_function( double t, changepoint * cp1, changepoint * c
   double segment_mean=cp1->getmeanvalue();
   double t1=cp1->getchangepoint();
   unsigned long long int i1=cp1->getdataindex();
-  unsigned long long int it=m_data_cont?m_data_cont->find_data_index(t1+t) : (static_cast<unsigned int>(t1+t)<m_cum_counts->get_cols() ? static_cast<unsigned int>(t1+t):m_cum_counts->get_cols()-1);
-  if(i1==it & i1>0)
-    i1-=1;
-  unsigned long long int entry_count=m_data_cont?i1:(*m_cum_counts)[0][i1<m_cum_counts->get_cols()?i1:m_cum_counts->get_cols()-1];
+  unsigned long long int it=m_data_cont?m_data_cont->find_data_index(t1+t) : (static_cast<unsigned int>(floor(t1+t))<m_cum_counts->get_cols() ? static_cast<unsigned int>(floor(t1+t)):m_cum_counts->get_cols()-1);
+  //  if(i1==it & i1>0)
+  //    i1--;
+  //  unsigned long long int entry_count=m_data_cont?i1:(*m_cum_counts)[0][i1<m_cum_counts->get_cols()?i1:m_cum_counts->get_cols()-1];
+  unsigned long long int entry_count=m_data_cont?i1:i1>0?(*m_cum_counts)[0][i1-1]:0;
   //  cout << t << " " << t1+t << endl;
   //(i2>0 ? (*m_cum_counts)[0][i2-1] : 0) - (i1>0 ? (*m_cum_counts)[0][i1-1] : 0);
   double no_window_prob=get_mixture_prob_for_no_window(t);
-  unsigned long long int count=(m_data_cont?it:(*m_cum_counts)[0][min(it,m_cum_counts->get_cols()-1)])-entry_count;
-  double windowless_mean=(m_alpha+count)/(m_beta+t);
+  //  unsigned long long int count=(m_data_cont?it:(*m_cum_counts)[0][min(it,m_cum_counts->get_cols()-1)])-entry_count;
+  unsigned long long int count=m_data_cont?it:(it<m_cum_counts->get_cols()?(*m_cum_counts)[0][it]:(*m_cum_counts)[0][m_cum_counts->get_cols()-1])-entry_count;
+  //    cout << t << "\t" << t1+t << "  " << i1 << " : " << it << " " << count << " " << entry_count << endl;
+  double len=m_data_cont?t:it-i1+1;
+  double windowless_mean=(m_alpha+count)/(m_beta+len);
   double mean_t=no_window_prob*windowless_mean;
   for(unsigned int i = 0; i < m_num_windows; i++)
-    if(m_windows[i]<t){
+    if(m_windows[i]<=t){
       double p_i=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
       unsigned long long int itw=m_data_cont?m_data_cont->find_data_index(t1+t-m_windows[i]) : it-static_cast<unsigned int>(m_windows[i]);
       count=m_data_cont?it-itw:(*m_cum_counts)[0][it]-(*m_cum_counts)[0][itw];
-      double len=m_data_cont?m_windows[i]:(double)(it-itw);
+      len=m_data_cont?m_windows[i]:(double)(it-itw);
       mean_t+=p_i*(m_alpha+count)/(m_beta+len);
     }
   return mean_t/segment_mean;
@@ -643,7 +647,8 @@ void pp_model::calculate_window_data_statistics(){
 }
 
 void pp_model::calculate_dsc_time_window_data_statistics(){
-  for( unsigned int i = 0; i < m_num_windows; i++){
+  for( unsigned int i = 0; i < m_num_windows; i++)
+    if(m_cum_counts->get_cols()>m_windows[i]){
     unsigned long long int len=static_cast<unsigned long long int>(m_cum_counts->get_cols()-m_windows[i])-1;
     m_windowed_lhd_contributions[i] = new double[len+1];
     m_windowed_lhd_contributions[i][0] = 0;

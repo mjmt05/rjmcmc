@@ -4,7 +4,6 @@
 Function_of_Interest::Function_of_Interest(int grid,double start, double end, double prior_term, bool g, bool prob, bool intensity, bool online, bool sequential,int intervals,bool instant, double delta )
 :m_grid(grid),m_start(start),m_end(end),m_prior(prior_term),m_calculate_g(g),m_calculate_prob(prob),m_calculate_intensity(intensity),m_online(online),m_update(sequential),m_instantaneous(instant),m_delta(delta)
 {
-
   m_coal_importance_sampling = 0;
    m_prior_expectation_function_of_interest=NULL;
    m_prior_sd_function_of_interest=NULL;
@@ -292,7 +291,6 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
   int fb=static_cast<int>(floor((10000*(double)interval_begin)/(10000*(double)m_grid_points)));
   int fe =static_cast<int>(floor((10000*(double)interval_end)/(10000*(double)m_grid_points)));
 
-  
   for (int i=m_start_of_sample; i<sample_size; i++){
 
     loc_index_1=static_cast<int>(floor((10000*begin)/(10000*m_grid_points)));
@@ -326,8 +324,9 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
       else{
 	cpobj = sample[i]->get_theta_component(j+1);
 	loc_index_2 = static_cast<int>(floor((10000*((double)cpobj->getchangepoint()))/(10000*(double)m_grid_points)));
+	if(!m_cont)
+	  loc_index_2++;
       }
-
       
       cpobj=sample[i]->get_theta_component(j);
 
@@ -342,12 +341,14 @@ void Function_of_Interest::calculate_function(double interval_begin, double inte
 
 
       for (int k=loc_index_1; k<loc_index_2; k++){
-	
+
 	g= (m_grid_points*(k+1) - cpobj->getchangepoint());
 	
 	if(m_cont){
 	  g1=cpobj1->getchangepoint()-(m_grid_points*(k+1));
 	}
+	else
+	  g= (m_grid_points*k - cpobj->getchangepoint());
 
 	
 	if(m_online && k==(fe-1)){
