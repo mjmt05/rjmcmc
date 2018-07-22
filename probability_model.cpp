@@ -88,11 +88,13 @@ void probability_model::construct(){
   m_t=0;
   m_log_likelihood_constant=0;
   m_num_windows = 0;
+  window_lambda = 0;
+  get_window_lambda();
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;
   m_window_mixture_probs = NULL;
-  m_window_mixture_probs_sum = 0;
-  read_in_windows();
+  m_window_mixture_probs_sum = 1-exp(-window_lambda*m_end);
+  initialise_windows();
 }
 
 void probability_model::construct_time_scale(vector<string>* data_filenames, double season){
@@ -262,12 +264,14 @@ double probability_model::combine_p_values_from_endpoints( bool monte_carlo, uns
   return log(combined_value);*/
 }
 
-void probability_model::read_in_windows(const std::string& windows_filename,const std::string& window_probs_filename){
+void probability_model::read_in_windows(const std::string& windows_filename){
   ifstream WindowStream(windows_filename.c_str(), ios::in);
-  if(!WindowStream.is_open())
+  if(!WindowStream.is_open()){
+    if(window_lambda>0)
+      m_num_windows=static_cast<unsigned int>(m_end);
     return;
+  }
   vector<double> windows;
-  unsigned int i;
   double w_i;
   while(WindowStream.good()){
     string line;
@@ -281,37 +285,76 @@ void probability_model::read_in_windows(const std::string& windows_filename,cons
   }
   if(m_num_windows>0){
     m_windows = new double[m_num_windows];
-    for(i=0; i < m_num_windows; i++)
+    for(unsigned int i=0; i < m_num_windows; i++)
       m_windows[i] = windows[i];
   }else
     return;
-  m_windowed_lhd_contributions = new double*[m_num_windows];
-  for(i=0; i < m_num_windows; i++)
-    m_windowed_lhd_contributions[i] = NULL;
-  ifstream WindowProbStream(window_probs_filename.c_str(), ios::in);
-  if(!WindowProbStream.is_open())
-    return;
+}
+
+void probability_model::read_in_window_probs(const std::string& window_probs_filename){
   vector<double> window_probs;
   double p_w_i;
-  while(WindowProbStream.good()){
-    string line;
-    getline(WindowProbStream,line);
-    if(line.size()>0){
-      istringstream iss(line);
-      iss >> p_w_i;
-      m_window_mixture_probs_sum+=p_w_i;
-      window_probs.push_back(p_w_i);
+  ifstream WindowProbStream(window_probs_filename.c_str(), ios::in);
+  if(WindowProbStream.is_open()){
+    m_window_mixture_probs_sum=0;
+    while(WindowProbStream.good()){
+      string line;
+      getline(WindowProbStream,line);
+      if(line.size()>0){
+	istringstream iss(line);
+	iss >> p_w_i;
+	m_window_mixture_probs_sum+=p_w_i;
+	window_probs.push_back(p_w_i);
+      }
     }
   }
   m_window_mixture_probs = new double[m_num_windows];
-  for(i=0; i < m_num_windows; i++)
-    m_window_mixture_probs[i] = window_probs[i];
+  if(window_probs.size()>0)
+      for(unsigned int i=0; i < m_num_windows; i++)
+	m_window_mixture_probs[i] = window_probs[i];
+  else{
+    double lambda=exp(-window_lambda);
+    m_window_mixture_probs[0]=1-lambda;
+    for(unsigned int i=1; i < m_num_windows; i++)
+      m_window_mixture_probs[i] = m_window_mixture_probs[i-1]*lambda;
+  }
+}
+
+void probability_model::initialise_windows(){
+  read_in_windows();
+  read_in_window_probs();
+  m_windowed_lhd_contributions = new double*[m_num_windows];
+  for(unsigned int i=0; i < m_num_windows; i++)
+    m_windowed_lhd_contributions[i] = NULL;
 }
 
 double probability_model::get_mixture_prob_for_no_window(double t){
+  if(!m_windows)
+    return exp(-window_lambda*static_cast<unsigned int>(t+1));
   double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
   for(unsigned int i = 0; i < m_num_windows; i++)
     if(m_windows[i]>t)
-      prob_no_window+=(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+      prob_no_window+=get_window_mixture_prob(i);
   return prob_no_window;
+}
+
+double probability_model::get_window_mixture_prob(unsigned int i){
+  if(m_window_mixture_probs)
+    return m_window_mixture_probs[i];
+  if(m_windows)
+    return 1.0/m_num_windows;
+  return (1-exp(-window_lambda))*exp(-window_lambda*i);
+}
+
+void probability_model::get_window_lambda(const std::string& window_lambda_filename){
+  ifstream WindowLambdaStream(window_lambda_filename.c_str(), ios::in);
+  if(!WindowLambdaStream.is_open())
+    return;
+  string line;
+  getline(WindowLambdaStream,line);
+  if(line.size()>0){
+    istringstream iss(line);
+    iss >> window_lambda;
+    window_lambda=-log(1-window_lambda);
+  }
 }
