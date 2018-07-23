@@ -61,9 +61,8 @@ bool operator>(const changepoint & cp1, const changepoint & cp2){
 }
 
 ostream &operator<< ( ostream &output, const changepoint &cp){
-
-    output << cp.m_changepoint<<" "<<cp.m_mean_value;
-    return output;
+  output << cp.m_changepoint;//<<" "<<cp.m_mean_value;
+  return output;
 }
 
 bool changepoint::operator==(const changepoint * right) const{

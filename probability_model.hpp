@@ -74,7 +74,6 @@ class probability_model{
   void read_in_window_probs(const std::string& window_probs_filename = "window_probs.txt");
   double get_mixture_prob_for_no_window(double t=DBL_MAX);
   bool windowed_model(){return m_num_windows>0;}
-  double get_window_mixture_prob(unsigned int i);
   void get_window_lambda(const std::string& window_lambda_filename="window_lambda.txt");
 
  protected:
@@ -119,11 +118,12 @@ class probability_model{
   bool m_owner_of_seasonal_scale;
   bool m_owner_of_time_scale;
   unsigned int m_num_windows;
-  double window_lambda;//=-log(1-lambda) if lambda were a geometric probability
+  double m_window_lambda;//=-log(1-lambda) if lambda were a geometric probability
   double* m_windows;
   double** m_windowed_lhd_contributions;
   double* m_window_mixture_probs;
   double m_window_mixture_probs_sum;
+  double m_window_geometric_prob_epsilon;//allow truncation to this level of error.
 };
 
 

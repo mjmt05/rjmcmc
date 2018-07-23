@@ -88,12 +88,20 @@ void probability_model::construct(){
   m_t=0;
   m_log_likelihood_constant=0;
   m_num_windows = 0;
-  window_lambda = 0;
+  m_window_lambda = 0;
+  m_window_geometric_prob_epsilon = 0;
   get_window_lambda();
   m_windows = NULL;
   m_windowed_lhd_contributions = NULL;
   m_window_mixture_probs = NULL;
-  m_window_mixture_probs_sum = 1-exp(-window_lambda*m_end);
+  m_window_mixture_probs_sum = 1-exp(-m_window_lambda*m_end);
+  if(m_window_lambda>0){
+    m_num_windows=static_cast<unsigned int>(m_end);
+    if(1-m_window_mixture_probs_sum<m_window_geometric_prob_epsilon){
+      m_num_windows=static_cast<unsigned int>(ceil(-log(m_window_geometric_prob_epsilon)/m_window_lambda));
+      m_window_mixture_probs_sum = 1-exp(-m_window_lambda*m_num_windows);
+    }
+  }
   initialise_windows();
 }
 
@@ -266,11 +274,8 @@ double probability_model::combine_p_values_from_endpoints( bool monte_carlo, uns
 
 void probability_model::read_in_windows(const std::string& windows_filename){
   ifstream WindowStream(windows_filename.c_str(), ios::in);
-  if(!WindowStream.is_open()){
-    if(window_lambda>0)
-      m_num_windows=static_cast<unsigned int>(m_end);
+  if(!WindowStream.is_open())
     return;
-  }
   vector<double> windows;
   double w_i;
   while(WindowStream.good()){
@@ -313,7 +318,7 @@ void probability_model::read_in_window_probs(const std::string& window_probs_fil
       for(unsigned int i=0; i < m_num_windows; i++)
 	m_window_mixture_probs[i] = window_probs[i];
   else{
-    double lambda=exp(-window_lambda);
+    double lambda=exp(-m_window_lambda);
     m_window_mixture_probs[0]=1-lambda;
     for(unsigned int i=1; i < m_num_windows; i++)
       m_window_mixture_probs[i] = m_window_mixture_probs[i-1]*lambda;
@@ -330,20 +335,12 @@ void probability_model::initialise_windows(){
 
 double probability_model::get_mixture_prob_for_no_window(double t){
   if(!m_windows)
-    return exp(-window_lambda*static_cast<unsigned int>(t+1));
+    return exp(-m_window_lambda*static_cast<unsigned int>(t+1));
   double prob_no_window=(m_window_mixture_probs && (m_window_mixture_probs_sum<1)?1-m_window_mixture_probs_sum:0);
   for(unsigned int i = 0; i < m_num_windows; i++)
     if(m_windows[i]>t)
-      prob_no_window+=get_window_mixture_prob(i);
+      prob_no_window+=m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows;
   return prob_no_window;
-}
-
-double probability_model::get_window_mixture_prob(unsigned int i){
-  if(m_window_mixture_probs)
-    return m_window_mixture_probs[i];
-  if(m_windows)
-    return 1.0/m_num_windows;
-  return (1-exp(-window_lambda))*exp(-window_lambda*i);
 }
 
 void probability_model::get_window_lambda(const std::string& window_lambda_filename){
@@ -354,7 +351,14 @@ void probability_model::get_window_lambda(const std::string& window_lambda_filen
   getline(WindowLambdaStream,line);
   if(line.size()>0){
     istringstream iss(line);
-    iss >> window_lambda;
-    window_lambda=-log(1-window_lambda);
+    iss >> m_window_lambda;
+    m_window_lambda=-log(1-m_window_lambda);
+  }
+  if(WindowLambdaStream.good()){
+    getline(WindowLambdaStream,line);
+    if(line.size()>0){
+      istringstream iss(line);
+      iss >> m_window_geometric_prob_epsilon;
+    }
   }
 }

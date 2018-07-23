@@ -631,7 +631,7 @@ double pp_model::get_mean_function( double t, changepoint * cp1, changepoint * c
   for(unsigned int i = 0; i < m_num_windows; i++){
     double window_i=m_windows?m_windows[i]:i;
     if(window_i<=t){
-      double p_i=get_window_mixture_prob(i);
+      double p_i=m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows;
       unsigned long long int itw=m_data_cont?m_data_cont->find_data_index(t1+t-window_i) : it-static_cast<unsigned int>(window_i);
       count=m_data_cont?it-itw:(*m_cum_counts)[0][it]-(*m_cum_counts)[0][itw];
       len=m_data_cont?window_i:(double)(it-itw);
@@ -739,7 +739,7 @@ double pp_model::windowed_log_likelihood_interval_with_count(double t1, double t
   for(unsigned int i = 0; i < m_num_windows; i++){
     double window_i=m_windows?m_windows[i]:i;
     if(window_i<seg_length){
-      double p_i=get_window_mixture_prob(i);//(m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows);
+      double p_i=m_window_mixture_probs?m_window_mixture_probs[i]:1.0/m_num_windows;
       if(m_data_cont)
 	w_index=m_data_cont->find_data_index(t1+window_i,0,m_current_data_index1,m_current_data_index2);
       else
