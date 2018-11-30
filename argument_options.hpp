@@ -39,7 +39,9 @@ class ArgumentOptions{
   bool m_write_histograms_to_file;
   string m_model;
   bool m_importance_sampling;
-
+  string m_seasonal_changepoints;
+  string m_timescale;
+  int m_seasonal_scale;
 
  private:
   void usage(int status, char *);
