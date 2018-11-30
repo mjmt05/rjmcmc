@@ -15,7 +15,7 @@ pp_model::pp_model(vector<string>* data_filenames, double alpha, double beta, do
 :probability_model(data_filenames,start,end,season),m_alpha(alpha),m_beta(beta)
 {
    m_cum_counts = NULL;
-   m_pp_time_scale = NULL;
+   m_pp_time_scale = m_time_scale;
    construct();
 }
 
