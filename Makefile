@@ -11,9 +11,11 @@ endif
 
 .PHONY: clean
 
-all: mainRJ_example mainSMC_example mainSMC_vastdata
+all: mainRJ_example mainRJ_seasonal_example mainSMC_example mainSMC_vastdata
 
 mainRJ_example: mainRJ_example.cpp $(OBJS) #$(HEADERS)
+
+mainRJ_seasonal_example: mainRJ_seasonal_example.cpp $(OBJS) #$(HEADERS)
 
 mainSMC_example: mainSMC_example.cpp $(OBJS)#$(HEADERS)
 
@@ -22,4 +24,4 @@ mainSMC_vastdata: mainSMC_vastdata.cpp $(OBJS)
 %.o: %.cpp %.hpp
 
 clean:
-	rm -f mainRJ_example mainSMC_example mainSMC_vastdata *.o
+	rm -f mainRJ_example mainRJ_seasonal_example mainSMC_example mainSMC_vastdata *.o
