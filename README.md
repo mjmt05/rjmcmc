@@ -1,6 +1,9 @@
 # rjmcmc
 
 ##Description
+# rjmcmc
+
+##Description
 rjmcmc is C++ code for both a reversible jump Markov chain Monte Carlo (RJMCMC) algorithm and a sequential Monte Carlo algorithm (SMC) to sample changepoints in continuous time processes. 
 
 ##Version
@@ -24,7 +27,8 @@ make mainSMC_example
 
 VASTDATA 
 ```
-./mainSMC_vastdata
+make mainSMC_vastdata
+./mainSMC_vastdata -h
 ```
 Use the default examples for SMC to get results from the paper, see reference. To run the vast data copy the executable (mainSMC_vastdata) into the folder vastdata and use the default example for results from the paper.
 

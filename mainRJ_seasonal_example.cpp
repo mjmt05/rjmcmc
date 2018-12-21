@@ -16,15 +16,16 @@ int main(int argc, char *argv[])
   ArgumentOptions o = ArgumentOptions();
   o.parse(argc,argv);
 
+  
   Data<double> * dataobj = NULL;
-  Data<long long unsigned int> *disc_dataobj = NULL;
-  bool discrete = 1; //is it a discrete or cts time model
-  if (discrete)
-    disc_dataobj = new Data<long long unsigned int>(o.m_datafile,false);//:NULL;//std::cin);//XX
-  else
-    dataobj = new Data<double>(o.m_datafile,false);
+  if (o.m_seasonal_changepoints.size() == 0) {
+   dataobj = new Data<double>(o.m_datafile,false);
+  }
+
+
   int max_cps = 1e9; //if using a different prior for the changepoints theoretically could use have a maximum number of allowed cps in the model, not implemented
   double variance_cp_prior = 0; //if using a prior on the Poisson process parameter for the changepoints
+  bool discrete = 0; //is it a discrete or cts time model
   bool dovariable = 0; //for doing a variable sample size approach
   Particle<changepoint> * initialsample = NULL; //used if you want to start the RJMCMC algorithm with an initial set of changepoints
   bool store_sample = 0; //could store the sample when sampling not recommended.
@@ -32,11 +33,20 @@ int main(int argc, char *argv[])
 
   probability_model * ppptr = NULL;
   if(o.m_model == "poisson"){
-    ppptr = !discrete?new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,NULL,NULL,o.m_start,o.m_end):
-      new pp_model(disc_dataobj,NULL,o.m_gamma_prior_1,o.m_gamma_prior_2,NULL);//XX
+    if (o.m_seasonal_changepoints.size() > 0) {
+      vector<string> f;
+      f.push_back(o.m_datafile);
+      f.push_back(o.m_timescale);
+      f.push_back(o.m_seasonal_changepoints);
+      ppptr = new pp_model(&f,o.m_gamma_prior_1,o.m_gamma_prior_2,
+			   o.m_start,o.m_end,o.m_seasonal_scale);
+
+    } else {
+      ppptr = new pp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj);
+    }
   }else if (o.m_model == "sncp") {
     ppptr = new sncp_model(o.m_gamma_prior_1,o.m_gamma_prior_2,dataobj,o.m_seed);
-  }
+  } 
 
   rj_pp rjpobject(o.m_start,o.m_end,o.m_iterations,max_cps,o.m_move_width,o.m_cp_prior,variance_cp_prior,ppptr,o.m_thinning,o.m_burnin,discrete,dovariable,initialsample,o.m_seed,store_sample);
 
@@ -66,10 +76,6 @@ int main(int argc, char *argv[])
     rjpobject.calculate_sample_histogram(false,o.m_grid,true);
   }
 
-  rjpobject.initiate_sample(initialsample);
-  pair<double,unsigned int> maxlik=rjpobject.get_max_log_likelihood();
-  cout << "Initial log likelihood: " << maxlik.first << "\t" << maxlik.second << endl;
-
   rjpobject.runsimulation();
 
   rjpobject.print_acceptance_rates();
@@ -77,8 +83,6 @@ int main(int argc, char *argv[])
   cout << endl;
   cout << "MAP dimension: " << rjpobject.get_MAP_dimension() << endl;
   cout << "MAP changepoints and mean of the MAP dimension: " << *rjpobject.get_MAP_dimension_MAP() << endl;
-  maxlik=rjpobject.get_max_log_likelihood();
-  cout << "Maximum log likelihood: " << maxlik.first << "\t" << maxlik.second << endl;
 
   if(o.m_calculate_posterior_mean){
     Function_of_Interest * foi = rjpobject.get_foi();
