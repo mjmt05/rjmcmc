@@ -96,9 +96,10 @@ int main(int argc, char *argv[])
     SMCobj.use_spacing_prior();
   }
 
-  //  if (o.m_model == "ur") {
-  //    SMCobj.set_discrete_model();//read in x values as well now
-  //  }
+  if (o.m_model == "ur") {
+    if (dataobj->get_rows()==1)//can read in x values as well now
+      SMCobj.set_discrete_model();
+  }
 
   if(o.m_importance_sampling && o.m_model != "sncp"){
     SMCobj.do_importance_sampling();
