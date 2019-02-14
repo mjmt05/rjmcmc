@@ -37,8 +37,8 @@ void ur_model::use_random_mean(int seed) {
 double ur_model::log_likelihood_interval(changepoint *obj1, changepoint *obj2, changepoint *objl1){
     m_current_data_index1=obj1->getdataindex();
     m_current_data_index2=obj2->getdataindex();
-    if(m_current_data_index2>m_current_data_index1){
-      cerr<<"r can not be less than 0"<<endl;
+    if(m_current_data_index2<m_current_data_index1){
+      cerr<<"r cannot be less than 0"<<endl;
       exit(1);
     }
     m_r=m_current_data_index2-m_current_data_index1;
