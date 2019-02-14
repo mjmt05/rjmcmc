@@ -8,15 +8,16 @@ ur_model::ur_model(double alpha,double gamma, double vconst, Data<double> *data)
   m_prior_mean = 0;
     m_data_ur = data;
     m_data_points = m_data_ur->get_cols();
+    m_y_row = m_data_ur->get_rows()-1;
     m_likelihood_term = -0.5*log(m_v)+m_alpha*log(m_gamma)-gsl_sf_lngamma(m_alpha);
     m_inv_v = 1.0 / m_v;
     m_ysum = new double[m_data_points];
     m_ysum2 = new double[m_data_points];
-    m_ysum[0]= m_data_ur->m_X[0][0];
-    m_ysum2[0] = (m_data_ur->m_X[0][0])*(m_data_ur->m_X[0][0]);
+    m_ysum[0]= m_data_ur->m_X[m_y_row][0];
+    m_ysum2[0] = (m_data_ur->m_X[m_y_row][0])*(m_data_ur->m_X[m_y_row][0]);
     for (unsigned int i=1; i<m_data_points; i++){
-        m_ysum[i]=m_data_ur->m_X[0][i] + m_ysum[i-1];
-        m_ysum2[i]=(m_data_ur->m_X[0][i])*(m_data_ur->m_X[0][i]) +m_ysum2[i-1];
+        m_ysum[i]=m_data_ur->m_X[m_y_row][i] + m_ysum[i-1];
+        m_ysum2[i]=(m_data_ur->m_X[m_y_row][i])*(m_data_ur->m_X[m_y_row][i]) +m_ysum2[i-1];
     }
     m_estimate_variance=false;
 }

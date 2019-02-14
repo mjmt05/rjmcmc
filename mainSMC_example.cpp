@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
   Data<double> * dataobj = NULL;
   if (o.m_model == "pregression") {
     dataobj_int = new Data<unsigned long long int>(o.m_datafile,false);
+  } else if (o.m_model == "ur" ){
+    dataobj = new Data<double>(o.m_datafile,true);
   } else {
     dataobj = new Data<double>(o.m_datafile,false);
   }
@@ -94,9 +96,9 @@ int main(int argc, char *argv[])
     SMCobj.use_spacing_prior();
   }
 
-  if (o.m_model == "ur") {
-    SMCobj.set_discrete_model();
-  }
+  //  if (o.m_model == "ur") {
+  //    SMCobj.set_discrete_model();//read in x values as well now
+  //  }
 
   if(o.m_importance_sampling && o.m_model != "sncp"){
     SMCobj.do_importance_sampling();

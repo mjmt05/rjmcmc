@@ -31,6 +31,7 @@ class ur_model : public probability_model{
    double * m_ysum;
    double * m_ysum2;
    unsigned long long int m_data_points;
+   unsigned long long int m_y_row;// the row of the data object holding the y values
    bool m_estimate_variance;//if true, report E[sigma^2] rather than E[mu]
   bool m_prior_mean;
 };
